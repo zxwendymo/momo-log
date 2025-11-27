@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload, Image as ImageIcon, Grid } from 'lucide-react';
+import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload, Image as ImageIcon, Grid, Tag } from 'lucide-react';
 
 // --- IndexedDB Helper (The Big Warehouse) ---
 const DB_NAME = 'MomoLogDB';
@@ -304,8 +304,18 @@ const NoteCard = ({ entry, onClick }) => {
     );
 };
 
+// --- Gallery View with Tag Filters ---
 const GalleryView = ({ entries, onEntryClick }) => {
+  const [filterTag, setFilterTag] = useState(null);
   const imageEntries = entries.filter(e => e.image);
+  
+  // Extract all unique tags
+  const allTags = [...new Set(imageEntries.flatMap(e => e.tags || []))].filter(Boolean);
+
+  const displayImages = filterTag 
+    ? imageEntries.filter(e => e.tags && e.tags.includes(filterTag))
+    : imageEntries;
+
   if (imageEntries.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-64 opacity-50 gap-2">
@@ -316,15 +326,40 @@ const GalleryView = ({ entries, onEntryClick }) => {
   }
   return (
     <div className="p-4 pb-32 animate-fade-in">
-        <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-[0.3em] text-sm uppercase">Memory Corridor</h3>
+        <h3 className="text-center font-serif text-[#6B5D52] mb-4 tracking-[0.3em] text-sm uppercase">Memory Corridor</h3>
+        
+        {/* Tag Filters */}
+        {allTags.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6 pb-2">
+                <button 
+                    onClick={() => setFilterTag(null)}
+                    className={`whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-serif border transition-all ${!filterTag ? 'bg-[#8D7B68] text-white border-[#8D7B68]' : 'bg-white text-[#8D7B68] border-[#EBE8E0]'}`}
+                >
+                    All
+                </button>
+                {allTags.map(tag => (
+                    <button 
+                        key={tag}
+                        onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+                        className={`whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-serif border transition-all ${filterTag === tag ? 'bg-[#8D7B68] text-white border-[#8D7B68]' : 'bg-white text-[#8D7B68] border-[#EBE8E0]'}`}
+                    >
+                        {tag}
+                    </button>
+                ))}
+            </div>
+        )}
+
         <div className="columns-2 gap-3 space-y-3">
-            {imageEntries.map(entry => (
+            {displayImages.map(entry => (
                 <div key={entry.id} onClick={() => onEntryClick(entry)} className="break-inside-avoid mb-3 relative group cursor-pointer">
                     <img src={entry.image} className="w-full rounded-[2px] shadow-sm border border-[#EBE8E0] grayscale-[0.1] group-hover:grayscale-0 transition-all" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-[2px]"></div>
                 </div>
             ))}
         </div>
+        {displayImages.length === 0 && (
+            <div className="text-center text-[10px] text-[#A89F91] py-8 font-serif">No photos with this tag</div>
+        )}
     </div>
   )
 }
@@ -452,22 +487,6 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
             {!isExporting && <button onClick={nextMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronRight size={18}/></button>}
         </div>
 
-        {!isExporting && (
-            <div className="px-4 mb-4 relative group">
-                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                    <Search size={12} className="text-[#C4Bdb5]" />
-                </div>
-                <input 
-                    type="text" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search..."
-                    className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2 pl-8 pr-4 text-[10px] text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] font-serif tracking-wide"
-                />
-                {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-6 flex items-center text-[#D4Ccc5]"><X size={10} /></button>}
-            </div>
-        )}
-
         <div className={`grid grid-cols-7 relative z-10 ${isExporting ? 'gap-1.5 px-1' : 'gap-2 px-2 mb-2'}`}>
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className={`text-center font-serif mb-1 text-[#A89F91] ${isExporting ? 'text-[10px] font-bold' : 'text-[10px]'}`}>{d}</div>)}
             {blanks.map(i => <div key={`blank-${i}`} />)}
@@ -515,6 +534,30 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
                 </button>
             )}
           </div>
+
+          {/* Search Bar (Moved Here) */}
+          {!isExporting && (
+            <div className="mb-6 relative group z-20" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <Search size={14} className="text-[#C4Bdb5] group-focus-within:text-[#8D7B68] transition-colors" />
+                </div>
+                <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search memories (tags, text)..."
+                    className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2.5 pl-10 pr-4 text-xs text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] focus:bg-white font-serif tracking-wide transition-all shadow-[0_2px_10px_-4px_rgba(141,123,104,0.05)]"
+                />
+                {searchTerm && (
+                    <button 
+                        onClick={() => setSearchTerm('')}
+                        className="absolute inset-y-0 right-3 flex items-center text-[#D4Ccc5] hover:text-[#8D7B68]"
+                    >
+                        <X size={12} />
+                    </button>
+                )}
+            </div>
+          )}
           
           {displayEntries.length > 0 ? (
               <div className="space-y-4 animate-slide-up">
@@ -651,7 +694,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
                 </div>
                 {error && <p className="text-center text-red-400 text-xs mb-4 font-serif">{error}</p>}
                 <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
-                    <Calendar size={12} className="text-[#C4Bdb5] mr-2" />
+                    <CalendarIcon size={12} className="text-[#C4Bdb5] mr-2" />
                     <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="text-center text-xs text-[#6B5D52] font-serif bg-transparent focus:outline-none w-full uppercase tracking-widest cursor-pointer" style={{ colorScheme: 'light' }} />
                 </div>
                 <div className="mb-6 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
