@@ -419,7 +419,7 @@ const CalendarView = ({ entries }) => {
   };
 
   return (
-    <div className="pt-4 pb-24 animate-fade-in flex flex-col h-full">
+    <div className="animate-fade-in flex flex-col">
       {/* Calendar Content to Capture 
          Optimized Layout for Export Mode: Less padding, smaller gap, larger grid
       */}
@@ -500,7 +500,7 @@ const CalendarView = ({ entries }) => {
         </div>
       </div>
 
-      <div className="flex-1 bg-[#FDFBF7] border-t border-[#F4F1EA] p-4 min-h-[200px]">
+      <div className="bg-[#FDFBF7] border-t border-[#F4F1EA] p-4 min-h-[200px]">
           <h3 className="text-[10px] text-[#A89F91] font-serif tracking-[0.2em] mb-4 text-center uppercase">
             {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
           </h3>
@@ -669,7 +669,8 @@ export default function App() {
   });
 
   return (
-    <div className="fixed inset-0 bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
+    // Updated Root Container: relative h-[100dvh] for mobile scrolling fix
+    <div className="relative h-[100dvh] w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
       <GrainOverlay isExporting={false} />
       
       <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
@@ -683,8 +684,8 @@ export default function App() {
            <WeatherWidget />
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-24 scroll-smooth">
+        {/* Content - added touch scrolling support */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
            {tab === 'home' ? (
              <div className="animate-fade-in pt-2 px-4">
                 {/* --- 新增搜索栏开始 --- */}
