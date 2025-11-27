@@ -1,6 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload } from 'lucide-react';
 
+// --- Error Boundary Component (Safety Airbag) ---
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("App Crash:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#F9F7F2] p-6 text-center z-50">
+           <h2 className="text-xl font-bold text-stone-800 mb-4">哎呀，App 晕倒了 😵</h2>
+           <p className="text-sm text-stone-600 mb-6">可能是图片太大了，或者数据出了点小问题。</p>
+           <div className="bg-white p-4 rounded-lg border border-red-100 mb-6 w-full overflow-auto max-h-32">
+             <p className="text-xs text-red-400 font-mono break-all">{this.state.error?.message}</p>
+           </div>
+           <div className="flex gap-4">
+             <button onClick={() => window.location.reload()} className="px-6 py-2 bg-stone-800 text-white rounded-full text-sm shadow-lg">
+               刷新试试
+             </button>
+             <button onClick={() => { localStorage.removeItem('momo_entries'); window.location.reload(); }} className="px-6 py-2 bg-white border border-red-200 text-red-400 rounded-full text-sm">
+               清空重置
+             </button>
+           </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // --- Gemini API ---
 const apiKey = ""; 
 
@@ -37,7 +73,7 @@ const callGemini = async (prompt, imageBase64 = null) => {
   }
 };
 
-// --- Robust Image Compression ---
+// --- Robust Image Compression (Max 500px) ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -47,8 +83,8 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Limit resolution to 600px to ensure it fits in localStorage
-        const MAX_DIM = 600; 
+        // Much stricter limit for mobile safety
+        const MAX_DIM = 500; 
         let width = img.width;
         let height = img.height;
 
@@ -68,8 +104,8 @@ const compressImage = (file) => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        // Aggressive compression: 0.6 quality
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        // Low quality to save space (0.5)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
         resolve(dataUrl);
       };
       img.onerror = (e) => reject(e);
@@ -80,112 +116,16 @@ const compressImage = (file) => {
 
 // --- Icons ---
 const Icons = {
-  Bear: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <circle cx="6" cy="6" r="3.5" className="fill-[#D7C4BB]" /> 
-      <circle cx="18" cy="6" r="3.5" className="fill-[#D7C4BB]" /> 
-      <circle cx="12" cy="13" r="8.5" className="fill-[#E6D2C9]" /> 
-      <circle cx="12" cy="14.5" r="2.5" className="fill-[#F5E6E0]" /> 
-      <circle cx="10" cy="12" r="1" className="fill-[#5C4033]" />
-      <circle cx="14" cy="12" r="1" className="fill-[#5C4033]" />
-      <ellipse cx="12" cy="14" rx="1" ry="0.6" className="fill-[#5C4033]" />
-      <path d="M7 17c1.5 1 3.5 1 5 0" className="stroke-[#E6D2C9] stroke-width-[2]" /> 
-    </svg>
-  ),
-  Rabbit: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <ellipse cx="9" cy="7" rx="2.5" ry="6" className="fill-[#FFF5E6]" /> 
-      <ellipse cx="15" cy="7" rx="2.5" ry="6" className="fill-[#FFF5E6]" /> 
-      <path d="M9 7c0 0 0 3 0 0" className="stroke-[#FFD1DC] stroke-width-[2]" strokeLinecap="round" />
-      <path d="M15 7c0 0 0 3 0 0" className="stroke-[#FFD1DC] stroke-width-[2]" strokeLinecap="round" />
-      <circle cx="12" cy="14" r="8" className="fill-[#FFFAF0]" /> 
-      <circle cx="10" cy="13" r="1" className="fill-[#5C4033]" />
-      <circle cx="14" cy="13" r="1" className="fill-[#5C4033]" />
-      <path d="M11 15l1 1l1-1" className="stroke-[#FFB7B2] stroke-width-[1.5]" strokeLinecap="round" />
-      <circle cx="7" cy="15" r="1.5" className="fill-[#FFB7B2] opacity-50" /> 
-      <circle cx="17" cy="15" r="1.5" className="fill-[#FFB7B2] opacity-50" />
-    </svg>
-  ),
-  Cat: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <path d="M5 6l3 5h8l3-5l-4 3H9z" className="fill-[#E0E0E0]" /> 
-      <circle cx="12" cy="13" r="8.5" className="fill-[#F2F2F2]" /> 
-      <path d="M5 6l2 4" className="stroke-[#E0E0E0] stroke-width-[2]" />
-      <path d="M19 6l-2 4" className="stroke-[#E0E0E0] stroke-width-[2]" />
-      <path d="M9 13c1 0 1-1 2-1s1 1 2 0" className="stroke-[#888] stroke-width-[1.5] stroke-linecap-round" /> 
-      <path d="M13 13c1 0 1-1 2-1s1 1 2 0" className="stroke-[#888] stroke-width-[1.5] stroke-linecap-round" />
-      <path d="M11 16l1-0.5l1 0.5" className="stroke-[#FFB7B2] stroke-width-[1.5]" />
-    </svg>
-  ),
-  Fox: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <path d="M3 5l5 6l4-2l4 2l5-6l-7 16z" className="fill-[#E6A07C]" />
-      <path d="M12 21c4-1 6-7 6-10H6c0 3 2 9 6 10z" className="fill-[#FFF5E6]" />
-      <circle cx="9.5" cy="15" r="1" className="fill-[#5C4033]" />
-      <circle cx="14.5" cy="15" r="1" className="fill-[#5C4033]" />
-      <circle cx="12" cy="17.5" r="1.2" className="fill-[#5C4033]" />
-    </svg>
-  ),
-  Chick: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <circle cx="12" cy="13" r="8" className="fill-[#FFF9C4]" />
-      <path d="M12 4l1 3h-2z" className="fill-[#FFF9C4]" /> 
-      <circle cx="9" cy="12" r="1" className="fill-[#5C4033]" />
-      <circle cx="15" cy="12" r="1" className="fill-[#5C4033]" />
-      <path d="M11 14l1 1l1-1" className="fill-[#FFB74D]" /> 
-      <circle cx="7" cy="14" r="1.5" className="fill-[#FFCC80] opacity-40" />
-    </svg>
-  ),
-  Frog: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <circle cx="7" cy="8" r="3" className="fill-[#C8E6C9]" />
-      <circle cx="17" cy="8" r="3" className="fill-[#C8E6C9]" />
-      <ellipse cx="12" cy="14" rx="9" ry="7" className="fill-[#DcedC8]" />
-      <circle cx="7" cy="8" r="1" className="fill-[#5C4033]" />
-      <circle cx="17" cy="8" r="1" className="fill-[#5C4033]" />
-      <path d="M10 14h4" className="stroke-[#81C784] stroke-width-[2] stroke-linecap-round" />
-      <circle cx="6" cy="15" r="1.5" className="fill-[#A5D6A7] opacity-60" />
-      <circle cx="18" cy="15" r="1.5" className="fill-[#A5D6A7] opacity-60" />
-    </svg>
-  ),
-  Deer: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <path d="M6 5l3 4M18 5l-3 4" className="stroke-[#BCAAA4] stroke-width-[2] stroke-linecap-round"/>
-      <circle cx="12" cy="13" r="8" className="fill-[#EFEBE9]" />
-      <path d="M7 10a5 5 0 0 0 10 0" className="fill-[#D7CCC8] opacity-30" />
-      <circle cx="12" cy="16" r="1.5" className="fill-[#8D6E63]" />
-      <circle cx="9" cy="13" r="1" className="fill-[#5C4033]" />
-      <circle cx="15" cy="13" r="1" className="fill-[#5C4033]" />
-    </svg>
-  ),
-  Koala: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <circle cx="5" cy="8" r="3.5" className="fill-[#CFD8DC]" />
-      <circle cx="19" cy="8" r="3.5" className="fill-[#CFD8DC]" />
-      <circle cx="12" cy="13" r="8" className="fill-[#ECEFF1]" />
-      <ellipse cx="12" cy="14" rx="2" ry="2.5" className="fill-[#78909C]" />
-      <path d="M8 11h2M14 11h2" className="stroke-[#546E7A] stroke-width-[1.5] stroke-linecap-round" />
-    </svg>
-  ),
-  Whale: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <path d="M3 14c0-5 4-8 9-8c6 0 10 4 10 9c0 1-2 2-5 2H5c-2 0-2-3-2-3z" className="fill-[#E1F5FE]" />
-      <circle cx="8" cy="13" r="1" className="fill-[#0277BD]" />
-      <path d="M16 9c0-2-1-3-1-3" className="stroke-[#B3E5FC] stroke-width-[2]" strokeLinecap="round"/>
-      <circle cx="16" cy="15" r="2" className="fill-[#B3E5FC] opacity-50" />
-    </svg>
-  ),
-  Dog: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm transition-transform hover:scale-110">
-      <path d="M4 8c0 0 1 5 3 6" className="stroke-[#D7CCC8] stroke-width-[4] stroke-linecap-round" />
-      <path d="M20 8c0 0-1 5-3 6" className="stroke-[#D7CCC8] stroke-width-[4] stroke-linecap-round" />
-      <circle cx="12" cy="13" r="8" className="fill-[#FFF3E0]" />
-      <ellipse cx="12" cy="14.5" rx="3" ry="2" className="fill-[#FFE0B2]" />
-      <circle cx="9" cy="12" r="1" className="fill-[#5C4033]" />
-      <circle cx="15" cy="12" r="1" className="fill-[#5C4033]" />
-      <circle cx="12" cy="14" r="1.2" className="fill-[#5D4037]" />
-    </svg>
-  ),
+  Bear: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><circle cx="6" cy="6" r="3.5" className="fill-[#D7C4BB]" /><circle cx="18" cy="6" r="3.5" className="fill-[#D7C4BB]" /><circle cx="12" cy="13" r="8.5" className="fill-[#E6D2C9]" /><circle cx="12" cy="14.5" r="2.5" className="fill-[#F5E6E0]" /><circle cx="10" cy="12" r="1" className="fill-[#5C4033]" /><circle cx="14" cy="12" r="1" className="fill-[#5C4033]" /><ellipse cx="12" cy="14" rx="1" ry="0.6" className="fill-[#5C4033]" /><path d="M7 17c1.5 1 3.5 1 5 0" className="stroke-[#E6D2C9] stroke-width-[2]" /></svg>),
+  Rabbit: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><ellipse cx="9" cy="7" rx="2.5" ry="6" className="fill-[#FFF5E6]" /><ellipse cx="15" cy="7" rx="2.5" ry="6" className="fill-[#FFF5E6]" /><path d="M9 7c0 0 0 3 0 0" className="stroke-[#FFD1DC] stroke-width-[2]" strokeLinecap="round" /><path d="M15 7c0 0 0 3 0 0" className="stroke-[#FFD1DC] stroke-width-[2]" strokeLinecap="round" /><circle cx="12" cy="14" r="8" className="fill-[#FFFAF0]" /><circle cx="10" cy="13" r="1" className="fill-[#5C4033]" /><circle cx="14" cy="13" r="1" className="fill-[#5C4033]" /><path d="M11 15l1 1l1-1" className="stroke-[#FFB7B2] stroke-width-[1.5]" strokeLinecap="round" /><circle cx="7" cy="15" r="1.5" className="fill-[#FFB7B2] opacity-50" /><circle cx="17" cy="15" r="1.5" className="fill-[#FFB7B2] opacity-50" /></svg>),
+  Cat: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><path d="M5 6l3 5h8l3-5l-4 3H9z" className="fill-[#E0E0E0]" /><circle cx="12" cy="13" r="8.5" className="fill-[#F2F2F2]" /><path d="M5 6l2 4" className="stroke-[#E0E0E0] stroke-width-[2]" /><path d="M19 6l-2 4" className="stroke-[#E0E0E0] stroke-width-[2]" /><path d="M9 13c1 0 1-1 2-1s1 1 2 0" className="stroke-[#888] stroke-width-[1.5] stroke-linecap-round" /><path d="M13 13c1 0 1-1 2-1s1 1 2 0" className="stroke-[#888] stroke-width-[1.5] stroke-linecap-round" /><path d="M11 16l1-0.5l1 0.5" className="stroke-[#FFB7B2] stroke-width-[1.5]" /></svg>),
+  Fox: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><path d="M3 5l5 6l4-2l4 2l5-6l-7 16z" className="fill-[#E6A07C]" /><path d="M12 21c4-1 6-7 6-10H6c0 3 2 9 6 10z" className="fill-[#FFF5E6]" /><circle cx="9.5" cy="15" r="1" className="fill-[#5C4033]" /><circle cx="14.5" cy="15" r="1" className="fill-[#5C4033]" /><circle cx="12" cy="17.5" r="1.2" className="fill-[#5C4033]" /></svg>),
+  Chick: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><circle cx="12" cy="13" r="8" className="fill-[#FFF9C4]" /><path d="M12 4l1 3h-2z" className="fill-[#FFF9C4]" /><circle cx="9" cy="12" r="1" className="fill-[#5C4033]" /><circle cx="15" cy="12" r="1" className="fill-[#5C4033]" /><path d="M11 14l1 1l1-1" className="fill-[#FFB74D]" /><circle cx="7" cy="14" r="1.5" className="fill-[#FFCC80] opacity-40" /></svg>),
+  Frog: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><circle cx="7" cy="8" r="3" className="fill-[#C8E6C9]" /><circle cx="17" cy="8" r="3" className="fill-[#C8E6C9]" /><ellipse cx="12" cy="14" rx="9" ry="7" className="fill-[#DcedC8]" /><circle cx="7" cy="8" r="1" className="fill-[#5C4033]" /><circle cx="17" cy="8" r="1" className="fill-[#5C4033]" /><path d="M10 14h4" className="stroke-[#81C784] stroke-width-[2] stroke-linecap-round" /><circle cx="6" cy="15" r="1.5" className="fill-[#A5D6A7] opacity-60" /><circle cx="18" cy="15" r="1.5" className="fill-[#A5D6A7] opacity-60" /></svg>),
+  Deer: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><path d="M6 5l3 4M18 5l-3 4" className="stroke-[#BCAAA4] stroke-width-[2] stroke-linecap-round"/><circle cx="12" cy="13" r="8" className="fill-[#EFEBE9]" /><path d="M7 10a5 5 0 0 0 10 0" className="fill-[#D7CCC8] opacity-30" /><circle cx="12" cy="16" r="1.5" className="fill-[#8D6E63]" /><circle cx="9" cy="13" r="1" className="fill-[#5C4033]" /><circle cx="15" cy="13" r="1" className="fill-[#5C4033]" /></svg>),
+  Koala: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><circle cx="5" cy="8" r="3.5" className="fill-[#CFD8DC]" /><circle cx="19" cy="8" r="3.5" className="fill-[#CFD8DC]" /><circle cx="12" cy="13" r="8" className="fill-[#ECEFF1]" /><ellipse cx="12" cy="14" rx="2" ry="2.5" className="fill-[#78909C]" /><path d="M8 11h2M14 11h2" className="stroke-[#546E7A] stroke-width-[1.5] stroke-linecap-round" /></svg>),
+  Whale: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><path d="M3 14c0-5 4-8 9-8c6 0 10 4 10 9c0 1-2 2-5 2H5c-2 0-2-3-2-3z" className="fill-[#E1F5FE]" /><circle cx="8" cy="13" r="1" className="fill-[#0277BD]" /><path d="M16 9c0-2-1-3-1-3" className="stroke-[#B3E5FC] stroke-width-[2]" strokeLinecap="round"/><circle cx="16" cy="15" r="2" className="fill-[#B3E5FC] opacity-50" /></svg>),
+  Dog: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><path d="M4 8c0 0 1 5 3 6" className="stroke-[#D7CCC8] stroke-width-[4] stroke-linecap-round" /><path d="M20 8c0 0-1 5-3 6" className="stroke-[#D7CCC8] stroke-width-[4] stroke-linecap-round" /><circle cx="12" cy="13" r="8" className="fill-[#FFF3E0]" /><ellipse cx="12" cy="14.5" rx="3" ry="2" className="fill-[#FFE0B2]" /><circle cx="9" cy="12" r="1" className="fill-[#5C4033]" /><circle cx="15" cy="12" r="1" className="fill-[#5C4033]" /><circle cx="12" cy="14" r="1.2" className="fill-[#5D4037]" /></svg>),
 };
 
 const MOODS = [
@@ -209,15 +149,6 @@ const getTodayStr = () => {
     return `${year}-${month}-${day}`;
 };
 
-const getPastDateStr = (daysAgo) => {
-    const d = new Date();
-    d.setDate(d.getDate() - daysAgo);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
 const formatDateSafe = (dateString, options) => {
     try {
         if (!dateString) return 'Unknown Date';
@@ -230,17 +161,7 @@ const formatDateSafe = (dateString, options) => {
     }
 };
 
-const MOCK_ENTRIES = [
-  {
-    id: '1',
-    date: getTodayStr(), 
-    image: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&q=80&w=600',
-    location: 'Cinque Terre',
-    mood: 'happy',
-    tags: ['#看海', '#治愈'],
-    text: '海风吹过的时候，时间好像变慢了。喜欢这种淡淡的蓝色。🌊',
-  },
-];
+const MOCK_ENTRIES = [];
 
 // --- Components ---
 const GrainOverlay = ({ isExporting }) => (
@@ -324,21 +245,18 @@ const NoteCard = ({ entry, onClick }) => {
     return (
         <div onClick={onClick} className="mb-6 mx-4 bg-[#FFFDF5] p-5 shadow-[0_2px_8px_-2px_rgba(141,123,104,0.1)] border border-[#EBE8E0] relative rounded-[1px] group cursor-pointer active:scale-95 transition-transform">
             <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full bg-[#E6C9BB] shadow-sm z-10 border border-[#D7C4BB]"></div>
-            
             <div className="flex justify-between items-center mb-4 border-b border-[#F4F1EA] pb-2 border-dashed">
                 <span className="font-serif text-[#A89F91] text-[10px] tracking-widest">
                     {formatDateSafe(entry.date, { weekday: 'long' }).toUpperCase()}
                 </span>
                 <div className="scale-75 opacity-80 group-hover:scale-90 transition-transform"><MoodIcon /></div>
             </div>
-
             <div className="relative">
                 <Quote size={12} className="absolute -top-1 -left-1 text-[#E6C9BB] opacity-30" />
                 <p className="font-serif text-[#6B5D52] text-xs leading-7 tracking-wide whitespace-pre-wrap pl-2 relative z-10">
                     {entry.text || '...'}
                 </p>
             </div>
-
             <div className="mt-4 flex flex-wrap gap-2 justify-end">
                 {entry.tags && Array.isArray(entry.tags) && entry.tags.map(tag => (
                     <span key={tag} className="text-[9px] text-[#C4Bdb5] font-serif italic">
@@ -544,8 +462,9 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   };
 
   const handleSave = () => {
-      const hasText = text && text.trim().length > 0;
-      const hasImage = preview && preview.length > 0;
+      // Logic: Allow EITHER text OR image
+      const hasText = text && String(text).trim().length > 0;
+      const hasImage = preview && String(preview).length > 0;
 
       if (!hasText && !hasImage) {
           setError("请至少输入文字或上传一张照片");
@@ -659,7 +578,8 @@ const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
     )
 }
 
-export default function App() {
+// --- Main App Component Wrapped with ErrorBoundary ---
+const AppContent = () => {
   const [tab, setTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); 
@@ -683,9 +603,8 @@ export default function App() {
       localStorage.setItem('momo_entries', JSON.stringify(entries));
     } catch (e) {
       console.error("Storage Limit Reached", e);
-      // Fallback: Revert state to prevent white screen of death
       setEntries(previousEntries);
-      alert("空间已满 (Storage Full). 无法保存大图片。");
+      // No alert, just silent rollback or UI toast (simulated by logic)
     }
   }, [entries]);
 
@@ -804,7 +723,17 @@ export default function App() {
         .font-serif { font-family: 'Playfair Display', 'Noto Serif SC', serif; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+        @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
       `}</style>
     </div>
+  );
+};
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
   );
 }
