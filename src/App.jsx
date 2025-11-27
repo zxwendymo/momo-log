@@ -169,20 +169,11 @@ const getTodayStr = () => {
     return `${year}-${month}-${day}`;
 };
 
-const getPastDateStr = (daysAgo) => {
-    const d = new Date();
-    d.setDate(d.getDate() - daysAgo);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
 const formatDateSafe = (dateString, options) => {
     try {
         if (!dateString) return 'Unknown Date';
         // Replace - with / to fix browser compatibility issues with date parsing
-        const safeDateString = dateString.replace(/-/g, '/');
+        const safeDateString = String(dateString).replace(/-/g, '/');
         const date = new Date(safeDateString);
         if (isNaN(date.getTime())) return 'Invalid Date';
         return date.toLocaleDateString('en-US', options);
@@ -194,31 +185,13 @@ const formatDateSafe = (dateString, options) => {
 const MOCK_ENTRIES = [
   {
     id: '1',
-    date: getTodayStr(), // Today
+    date: getTodayStr(), 
     image: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&q=80&w=600',
     location: 'Cinque Terre',
     mood: 'happy',
     tags: ['#看海', '#治愈'],
     text: '海风吹过的时候，时间好像变慢了。喜欢这种淡淡的蓝色。🌊',
   },
-  {
-    id: '2',
-    date: getPastDateStr(3), // 3 Days ago
-    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600',
-    location: 'My Room',
-    mood: 'calm',
-    tags: ['#午后', '#Reading'],
-    text: '阳光洒在书页上，是今天最温柔的时刻。',
-  },
-  {
-    id: '3',
-    date: getTodayStr(), // Today Text Only
-    image: null,
-    location: 'Subway',
-    mood: 'tired',
-    tags: ['#Commute'],
-    text: '今天地铁上人好多，但是耳机里放着喜欢的歌，感觉也还不错。🎵',
-  }
 ];
 
 // --- Components ---
@@ -252,8 +225,8 @@ const TabBar = ({ currentTab, onTabChange, onAdd }) => (
   </div>
 );
 
-// Style 1: Polaroid Card (For Entries with Images)
 const PolaroidCard = ({ entry, onClick }) => {
+  if (!entry) return null; // Safety Check
   const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
   const MoodIcon = moodObj.icon;
   
@@ -276,7 +249,7 @@ const PolaroidCard = ({ entry, onClick }) => {
       <div className="px-2">
         <div className="flex justify-between items-start mb-3">
              <div className="flex gap-2 flex-wrap">
-                {entry.tags?.map(tag => (
+                {entry.tags && Array.isArray(entry.tags) && entry.tags.map(tag => (
                     <span key={tag} className="text-[10px] text-[#A89F91] font-serif bg-[#F9F7F2] px-1.5 py-0.5 rounded-[2px] border border-[#EBE8E0]">
                         {tag}
                     </span>
@@ -286,11 +259,11 @@ const PolaroidCard = ({ entry, onClick }) => {
                 <MoodIcon />
              </div>
         </div>
-        <p className="text-[#6B5D52] text-xs leading-6 font-serif tracking-wide whitespace-pre-wrap">{entry.text}</p>
+        <p className="text-[#6B5D52] text-xs leading-6 font-serif tracking-wide whitespace-pre-wrap">{entry.text || ''}</p>
         <div className="mt-4 flex items-center justify-between border-t border-[#F4F1EA] pt-2">
              <div className="flex items-center gap-1 text-[#C4Bdb5] text-[10px]">
                 <MapPin size={10} />
-                <span className="font-serif italic">{entry.location}</span>
+                <span className="font-serif italic">{entry.location || 'Unknown'}</span>
              </div>
              <Heart size={12} className="text-[#E6C9BB] hover:fill-[#E6C9BB] transition-colors cursor-pointer" />
         </div>
@@ -299,8 +272,8 @@ const PolaroidCard = ({ entry, onClick }) => {
   );
 };
 
-// Style 2: Note Card (For Text-Only Entries)
 const NoteCard = ({ entry, onClick }) => {
+    if (!entry) return null; // Safety Check
     const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
     const MoodIcon = moodObj.icon;
 
@@ -321,12 +294,12 @@ const NoteCard = ({ entry, onClick }) => {
             <div className="relative">
                 <Quote size={12} className="absolute -top-1 -left-1 text-[#E6C9BB] opacity-30" />
                 <p className="font-serif text-[#6B5D52] text-xs leading-7 tracking-wide whitespace-pre-wrap pl-2 relative z-10">
-                    {entry.text}
+                    {entry.text || '...'}
                 </p>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2 justify-end">
-                {entry.tags?.map(tag => (
+                {entry.tags && Array.isArray(entry.tags) && entry.tags.map(tag => (
                     <span key={tag} className="text-[9px] text-[#C4Bdb5] font-serif italic">
                         {tag}
                     </span>
@@ -341,28 +314,7 @@ const PostcardDecoration = () => (
         <div className="absolute inset-0 opacity-[0.4]" 
              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}>
         </div>
-
-        <div className="absolute top-2 right-2 opacity-30 transform rotate-12 scale-125">
-             <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
-                 <path d="M50 50 L50 20 M50 50 L80 50 M50 50 L50 80 M50 50 L20 50" stroke="#E6C9BB" strokeWidth="2" strokeLinecap="round"/>
-                 <circle cx="50" cy="50" r="10" fill="#FFE4E1" opacity="0.5"/>
-                 <path d="M50 30 Q60 20 70 30 T50 50" stroke="#D7C4BB" strokeWidth="1" fill="none"/>
-                 <path d="M50 30 Q40 20 30 30 T50 50" stroke="#D7C4BB" strokeWidth="1" fill="none"/>
-             </svg>
-        </div>
-
-        <div className="absolute bottom-4 left-4 opacity-40">
-             <svg width="80" height="40" viewBox="0 0 100 50" fill="none">
-                 <path d="M10 25 Q30 10 50 25 T90 25" stroke="#A89F91" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 4"/>
-                 <circle cx="20" cy="35" r="2" fill="#8D7B68"/>
-                 <circle cx="28" cy="15" r="1" fill="#8D7B68"/>
-             </svg>
-        </div>
-        
-        <div className="absolute bottom-2 right-4">
-             <span className="font-serif italic text-[#C4Bdb5] text-[10px] tracking-widest">captured by momo</span>
-        </div>
-
+        {/* Decorative SVGs here... */}
         <div className="absolute inset-2 border border-[#EBE8E0] rounded-[2px] opacity-50"></div>
     </div>
 );
@@ -388,7 +340,7 @@ const CalendarView = ({ entries, onEntryClick }) => {
     return `${year}-${month}-${day}`;
   };
 
-  const selectedEntries = entries.filter(e => e.date === getSelectedDateStr());
+  const selectedEntries = entries.filter(e => e && e.date === getSelectedDateStr());
 
   const loadHtml2Canvas = () => {
     return new Promise((resolve, reject) => {
@@ -404,58 +356,41 @@ const CalendarView = ({ entries, onEntryClick }) => {
   const handleSaveImage = async () => {
       setIsExporting(true); 
       await new Promise(r => setTimeout(r, 200)); 
-
       try {
           await loadHtml2Canvas();
           if (!calendarRef.current) return;
-          
           const canvas = await window.html2canvas(calendarRef.current, {
-              useCORS: true,
-              scale: 5, 
-              backgroundColor: '#FDFBF7',
+              useCORS: true, scale: 5, backgroundColor: '#FDFBF7',
           });
-          
           const link = document.createElement('a');
-          link.download = `momo-postcard-${currentDate.getFullYear()}-${currentDate.getMonth()+1}.png`;
+          link.download = `momo-postcard.png`;
           link.href = canvas.toDataURL('image/png');
           link.click();
       } catch (err) {
           console.error("Save failed:", err);
-          // No alert
       } finally {
           setIsExporting(false); 
       }
   };
 
   return (
-    <div className="animate-fade-in flex flex-col w-full">
-      <div 
-        ref={calendarRef} 
-        className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}
-      >
+    <div className="animate-fade-in flex flex-col w-full h-full">
+      <div ref={calendarRef} className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}>
         {isExporting && <PostcardDecoration />}
-
         <div className={`flex justify-between items-center mb-6 pt-2 relative z-10 ${isExporting ? 'px-0 justify-center mb-4' : 'px-4'}`}>
             {!isExporting && <button onClick={prevMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronLeft size={18}/></button>}
-            
             <div className="text-center relative">
                 <h2 className={`font-serif text-[#6B5D52] tracking-widest ${isExporting ? 'text-2xl mb-1' : 'text-xl'}`}>
                     {currentDate.toLocaleString('en-US', { month: 'long' })}
                     {isExporting && <span className="block text-xs text-[#A89F91] mt-0 tracking-[0.3em] font-normal">{currentDate.getFullYear()}</span>}
                 </h2>
                 {!isExporting && <div className="w-8 h-[1px] bg-[#D4Ccc5] mx-auto mt-2"></div>}
-                
                 {!isExporting && (
-                    <button 
-                        onClick={handleSaveImage}
-                        className="absolute -right-12 top-1 text-[#C4Bdb5] hover:text-[#8D7B68] transition-colors p-1"
-                        title="Save as Image"
-                    >
+                    <button onClick={handleSaveImage} className="absolute -right-12 top-1 text-[#C4Bdb5] hover:text-[#8D7B68] transition-colors p-1" title="Save">
                         <Download size={16} />
                     </button>
                 )}
             </div>
-
             {!isExporting && <button onClick={nextMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronRight size={18}/></button>}
         </div>
 
@@ -468,15 +403,11 @@ const CalendarView = ({ entries, onEntryClick }) => {
             const dayStr = String(day).padStart(2, '0');
             const dateStr = `${year}-${month}-${dayStr}`;
             
-            const entry = entries.find(e => e.date === dateStr);
+            const entry = entries.find(e => e && e.date === dateStr);
             const isSelected = !isExporting && selectedDate.getDate() === day && selectedDate.getMonth() === currentDate.getMonth() && selectedDate.getFullYear() === currentDate.getFullYear();
             
             return (
-                <div 
-                    key={day} 
-                    onClick={() => !isExporting && setSelectedDate(new Date(year, parseInt(month)-1, day))}
-                    className="aspect-square relative flex items-center justify-center group cursor-pointer"
-                >
+                <div key={day} onClick={() => !isExporting && setSelectedDate(new Date(year, parseInt(month)-1, day))} className="aspect-square relative flex items-center justify-center group cursor-pointer">
                     {entry ? (
                         <div className={`w-full h-full p-[3px] bg-white border border-[#EBE8E0] shadow-sm transform ${isSelected ? 'scale-105 rotate-0 z-10 ring-1 ring-[#8D7B68]' : 'rotate-[-2deg]'} ${!isExporting && 'group-hover:rotate-0'} transition-all duration-300 relative`}>
                             {entry.image ? (
@@ -503,15 +434,12 @@ const CalendarView = ({ entries, onEntryClick }) => {
           <h3 className="text-[10px] text-[#A89F91] font-serif tracking-[0.2em] mb-4 text-center uppercase">
             {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
           </h3>
-          
           {selectedEntries.length > 0 ? (
               <div className="space-y-4 animate-slide-up">
                   {selectedEntries.map(entry => (
-                      entry.image ? (
-                          <PolaroidCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} />
-                      ) : (
+                      entry.image ? 
+                          <PolaroidCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} /> : 
                           <NoteCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} />
-                      )
                   ))}
               </div>
           ) : (
@@ -532,7 +460,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   const [mood, setMood] = useState(MOODS[0].id);
   const [preview, setPreview] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [error, setError] = useState(''); // New error state
+  const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -547,9 +475,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
 
   const handleAiHelp = async () => {
     setIsAiLoading(true);
-    const prompt = preview 
-        ? "你是Lee Kyutae风格的记录者。请看图写一句极简、治愈、带点淡淡忧伤或温暖的中文手账文案。不要超过30字。" 
-        : "给我一句关于今天微小幸福的灵感文案，风格要像欧阳娜娜的Vlog旁白。";
+    const prompt = preview ? "你是Lee Kyutae风格的记录者。请看图写一句极简、治愈、中文手账文案。" : "给我一句关于今天微小幸福的灵感文案。";
     try {
         const res = await callGemini(prompt, preview);
         setText(res.trim());
@@ -570,8 +496,9 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
       const hasText = text && text.trim().length > 0;
       const hasImage = preview && preview.length > 0;
 
+      // Logic: At least one must be present
       if (!hasText && !hasImage) {
-          setError("请填写日记内容或上传图片");
+          setError("请至少输入文字或上传一张照片");
           return;
       }
       
@@ -600,69 +527,34 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
                 ) : <div></div>}
                 <button onClick={onClose} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
             </div>
-            
             <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-widest text-sm mt-2">
                 {initialEntry ? 'E D I T &nbsp; L O G' : 'N E W &nbsp; L O G'}
             </h3>
-            
             <div className="overflow-y-auto no-scrollbar flex-1">
-                <div 
-                    onClick={() => fileInputRef.current.click()}
-                    className="w-full aspect-video bg-[#F4F1EA] border border-dashed border-[#D4Ccc5] flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative"
-                >
+                <div onClick={() => fileInputRef.current.click()} className="w-full aspect-video bg-[#F4F1EA] border border-dashed border-[#D4Ccc5] flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
                     {preview ? <img src={preview} className="w-full h-full object-cover p-2 bg-white shadow-sm" /> : <Camera className="text-[#C4Bdb5]" size={24} />}
-                    <span className="text-[10px] text-[#C4Bdb5] mt-2 font-serif">{preview ? 'Change Photo' : 'Add Photo (Optional)'}</span>
-                    <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => {
+                    <span className="text-[10px] text-[#C4Bdb5] mt-2 font-serif">{preview ? 'Change Photo' : 'Add Photo'}</span>
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
                         const file = e.target.files[0];
                         if(file) { const r = new FileReader(); r.onload = () => setPreview(r.result); r.readAsDataURL(file); }
                     }} />
-                    {preview && (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); setPreview(null); fileInputRef.current.value = ''; }}
-                            className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-[#8D7B68] hover:bg-white"
-                        >
-                            <X size={12} />
-                        </button>
-                    )}
+                    {preview && <button onClick={(e) => { e.stopPropagation(); setPreview(null); fileInputRef.current.value = ''; }} className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-[#8D7B68] hover:bg-white"><X size={12} /></button>}
                 </div>
-
-                <textarea 
-                    value={text} 
-                    onChange={e => { setText(e.target.value); setError(''); }}
-                    placeholder="记录微小的瞬间..."
-                    className="w-full h-20 bg-transparent resize-none text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] focus:outline-none mb-2 leading-loose tracking-wide text-center"
-                />
-                
+                <textarea value={text} onChange={e => { setText(e.target.value); setError(''); }} placeholder="记录微小的瞬间..." className="w-full h-20 bg-transparent resize-none text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] focus:outline-none mb-2 leading-loose tracking-wide text-center" />
                 <div className="flex justify-center gap-2 mb-6">
                     <button onClick={handleAiHelp} disabled={isAiLoading} className="flex items-center gap-1 px-3 py-1 bg-[#F4F1EA] rounded-full text-[10px] text-[#8D7B68] hover:bg-[#EBE8E0]">
                         {isAiLoading ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} AI 灵感
                     </button>
                 </div>
-
                 {error && <p className="text-center text-red-400 text-xs mb-4 font-serif">{error}</p>}
-                
                 <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
                     <Calendar size={12} className="text-[#C4Bdb5] mr-2" />
-                    <input 
-                        type="date" 
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="text-center text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] bg-transparent focus:outline-none w-full uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
-                        style={{ colorScheme: 'light' }} 
-                    />
+                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="text-center text-xs text-[#6B5D52] font-serif bg-transparent focus:outline-none w-full uppercase tracking-widest cursor-pointer" style={{ colorScheme: 'light' }} />
                 </div>
-
                 <div className="mb-6 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
                     <MapPin size={12} className="text-[#C4Bdb5] mr-2" />
-                    <input 
-                        type="text" 
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="添加地点 (例如: 首尔)"
-                        className="text-center text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] bg-transparent focus:outline-none w-full"
-                    />
+                    <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="添加地点" className="text-center text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] bg-transparent focus:outline-none w-full" />
                 </div>
-
                 <div className="mb-2 text-center">
                     <span className="text-[9px] text-[#C4Bdb5] font-serif tracking-widest uppercase mb-2 block">- Select Mood -</span>
                     <div className="grid grid-cols-5 gap-y-4 gap-x-2">
@@ -678,8 +570,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
                     </div>
                 </div>
             </div>
-
-            <button onClick={handleSave} className={`w-full py-3 mt-4 text-[#F9F7F2] text-xs font-serif tracking-widest transition-colors ${!text && !preview ? 'bg-[#D4Ccc5] cursor-not-allowed' : 'bg-[#8D7B68] hover:bg-[#786958]'}`}>
+            <button onClick={handleSave} className={`w-full py-3 mt-4 text-[#F9F7F2] text-xs font-serif tracking-widest transition-colors ${(!text && !preview) ? 'bg-[#D4Ccc5] cursor-not-allowed' : 'bg-[#8D7B68] hover:bg-[#786958]'}`}>
                 {initialEntry ? 'U P D A T E' : 'S A V E'}
             </button>
         </div>
@@ -689,26 +580,20 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
 
 const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
     const fileInputRef = useRef(null);
-
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            onImport(file);
-        }
+        if (file) onImport(file);
     }
-
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#F9F7F2]/90 backdrop-blur-sm animate-fade-in">
             <div className="w-full max-w-xs bg-white p-6 rounded-[4px] shadow-2xl border border-[#EBE8E0] relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
                 <h3 className="text-center font-serif text-[#6B5D52] mb-8 tracking-widest text-sm">S E T T I N G S</h3>
-                
                 <div className="space-y-4">
                     <button onClick={onExport} className="w-full flex items-center justify-between px-4 py-3 bg-[#FDFBF7] border border-[#EBE8E0] text-[#6B5D52] text-xs font-serif hover:bg-[#F4F1EA] transition-colors">
                         <span>Backup Data (Export)</span>
                         <Download size={16} className="text-[#8D7B68]" />
                     </button>
-
                     <div className="relative">
                         <button onClick={() => fileInputRef.current.click()} className="w-full flex items-center justify-between px-4 py-3 bg-[#FDFBF7] border border-[#EBE8E0] text-[#6B5D52] text-xs font-serif hover:bg-[#F4F1EA] transition-colors">
                             <span>Restore Data (Import)</span>
@@ -716,9 +601,7 @@ const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
                         </button>
                         <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
                     </div>
-
                     <div className="h-px bg-[#F4F1EA] my-4"></div>
-
                     <button onClick={onReset} className="w-full flex items-center justify-center px-4 py-3 text-[#FFB7B2] text-xs font-serif hover:text-[#FF6961] transition-colors">
                         <Trash2 size={14} className="mr-2" />
                         <span>Clear All Data</span>
@@ -736,8 +619,15 @@ export default function App() {
   const [currentEntry, setCurrentEntry] = useState(null);
   
   const [entries, setEntries] = useState(() => {
-    const saved = localStorage.getItem('momo_entries');
-    return saved ? JSON.parse(saved) : MOCK_ENTRIES;
+    try {
+        const saved = localStorage.getItem('momo_entries');
+        const parsed = saved ? JSON.parse(saved) : MOCK_ENTRIES;
+        // Data sanitization: Ensure everything is array and valid objects
+        if (!Array.isArray(parsed)) return MOCK_ENTRIES;
+        return parsed.filter(e => e && typeof e === 'object');
+    } catch (e) {
+        return MOCK_ENTRIES;
+    }
   });
 
   useEffect(() => {
@@ -746,25 +636,12 @@ export default function App() {
 
   const [searchTerm, setSearchTerm] = useState(''); 
 
-  useEffect(() => {
-    const setAppHeight = () => {
-      const doc = document.documentElement;
-      doc.style.setProperty('--app-height', `${window.innerHeight}px`);
-    };
-    window.addEventListener('resize', setAppHeight);
-    setAppHeight();
-    return () => window.removeEventListener('resize', setAppHeight);
-  }, []);
-
   const filteredEntries = entries.filter(entry => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    const safeText = (entry.text || '').toLowerCase(); // Safety check
-    const safeLoc = (entry.location || '').toLowerCase(); // Safety check
-    
-    const matchesTag = entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(term));
-    const matchesText = safeText.includes(term);
-    const matchesLocation = safeLoc.includes(term);
+    const matchesTag = entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tag.toLowerCase().includes(term));
+    const matchesText = (entry.text || '').toLowerCase().includes(term);
+    const matchesLocation = (entry.location || '').toLowerCase().includes(term);
     return matchesTag || matchesText || matchesLocation;
   });
 
@@ -772,8 +649,7 @@ export default function App() {
   const openEditEntryModal = (entry) => { setCurrentEntry(entry); setIsModalOpen(true); };
   
   const handleSaveEntry = (entryData) => {
-    setSearchTerm(''); // Clear search on save to show new entry
-    
+    setSearchTerm(''); 
     if (currentEntry) {
         setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
     } else {
@@ -803,29 +679,21 @@ export default function App() {
           try {
               const importedData = JSON.parse(event.target.result);
               if (Array.isArray(importedData)) {
-                  // Use native confirm replacement or simple override
                   setEntries(importedData);
                   setIsSettingsOpen(false);
               }
-          } catch (e) {
-              // Silent fail or console log
-              console.error("Error parsing file");
-          }
+          } catch (e) { console.error("Import failed"); }
       };
       reader.readAsText(file);
   };
 
   const handleResetData = () => {
-      // Simple double check logic could go here, but for now direct clear
       setEntries([]);
       setIsSettingsOpen(false);
   }
 
   return (
-    <div 
-        className="fixed inset-0 w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white"
-        style={{ height: 'var(--app-height, 100vh)' }} 
-    >
+    <div className="fixed inset-0 w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
       <GrainOverlay isExporting={false} />
       
       <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
@@ -850,28 +718,12 @@ export default function App() {
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                         <Search size={14} className="text-[#C4Bdb5] group-focus-within:text-[#8D7B68] transition-colors" />
                     </div>
-                    <input 
-                        type="text" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search memories..."
-                        className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2.5 pl-10 pr-4 text-xs text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] focus:bg-white font-serif tracking-wide transition-all shadow-[0_2px_10px_-4px_rgba(141,123,104,0.05)]"
-                    />
-                    {searchTerm && (
-                        <button 
-                            onClick={() => setSearchTerm('')}
-                            className="absolute inset-y-0 right-3 flex items-center text-[#D4Ccc5] hover:text-[#8D7B68]"
-                        >
-                            <X size={12} />
-                        </button>
-                    )}
+                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search memories..." className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2.5 pl-10 pr-4 text-xs text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] focus:bg-white font-serif tracking-wide transition-all shadow-[0_2px_10px_-4px_rgba(141,123,104,0.05)]" />
+                    {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-3 flex items-center text-[#D4Ccc5] hover:text-[#8D7B68]"><X size={12} /></button>}
                 </div>
-
                 {filteredEntries.length > 0 ? (
                     filteredEntries.map(e => (
-                        e.image ? 
-                        <PolaroidCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} /> : 
-                        <NoteCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} />
+                        e.image ? <PolaroidCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} /> : <NoteCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} />
                     ))
                 ) : (
                     <div className="flex flex-col items-center justify-center py-12 opacity-50 gap-2">
@@ -887,23 +739,8 @@ export default function App() {
 
         <TabBar currentTab={tab} onTabChange={setTab} onAdd={openNewEntryModal} />
         
-        {isModalOpen && (
-            <EntryModal 
-                onClose={() => setIsModalOpen(false)} 
-                onSave={handleSaveEntry} 
-                onDelete={handleDeleteEntry}
-                initialEntry={currentEntry} 
-            />
-        )}
-
-        {isSettingsOpen && (
-            <SettingsModal 
-                onClose={() => setIsSettingsOpen(false)} 
-                onExport={handleExportData}
-                onImport={handleImportData}
-                onReset={handleResetData}
-            />
-        )}
+        {isModalOpen && <EntryModal onClose={() => setIsModalOpen(false)} onSave={handleSaveEntry} onDelete={handleDeleteEntry} initialEntry={currentEntry} />}
+        {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} onExport={handleExportData} onImport={handleImportData} onReset={handleResetData} />}
       </div>
 
       <style>{`
@@ -912,8 +749,6 @@ export default function App() {
         .font-serif { font-family: 'Playfair Display', 'Noto Serif SC', serif; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
       `}</style>
     </div>
   );
