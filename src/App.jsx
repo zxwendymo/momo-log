@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, FileJson, Upload } from 'lucide-react';
+import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload } from 'lucide-react';
 
 // --- Gemini API ---
 const apiKey = ""; 
@@ -178,8 +178,6 @@ const getPastDateStr = (daysAgo) => {
     return `${year}-${month}-${day}`;
 };
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
 const formatDateSafe = (dateString, options) => {
     try {
         if (!dateString) return 'Unknown Date';
@@ -252,7 +250,6 @@ const TabBar = ({ currentTab, onTabChange, onAdd }) => (
   </div>
 );
 
-// Style 1: Polaroid Card (For Entries with Images)
 const PolaroidCard = ({ entry, onClick }) => {
   const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
   const MoodIcon = moodObj.icon;
@@ -299,7 +296,6 @@ const PolaroidCard = ({ entry, onClick }) => {
   );
 };
 
-// Style 2: Note Card (For Text-Only Entries)
 const NoteCard = ({ entry, onClick }) => {
     const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
     const MoodIcon = moodObj.icon;
@@ -309,7 +305,6 @@ const NoteCard = ({ entry, onClick }) => {
             onClick={onClick}
             className="mb-6 mx-4 bg-[#FFFDF5] p-5 shadow-[0_2px_8px_-2px_rgba(141,123,104,0.1)] border border-[#EBE8E0] relative rounded-[1px] group cursor-pointer active:scale-95 transition-transform"
         >
-            {/* Pin Effect */}
             <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full bg-[#E6C9BB] shadow-sm z-10 border border-[#D7C4BB]"></div>
             
             <div className="flex justify-between items-center mb-4 border-b border-[#F4F1EA] pb-2 border-dashed">
@@ -337,15 +332,12 @@ const NoteCard = ({ entry, onClick }) => {
     );
 };
 
-// --- Postcard Decoration (Hand-drawn Style) ---
 const PostcardDecoration = () => (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Paper Texture for Export */}
         <div className="absolute inset-0 opacity-[0.4]" 
              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}>
         </div>
 
-        {/* Top Right Doodle: Flower */}
         <div className="absolute top-2 right-2 opacity-30 transform rotate-12 scale-125">
              <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
                  <path d="M50 50 L50 20 M50 50 L80 50 M50 50 L50 80 M50 50 L20 50" stroke="#E6C9BB" strokeWidth="2" strokeLinecap="round"/>
@@ -355,7 +347,6 @@ const PostcardDecoration = () => (
              </svg>
         </div>
 
-        {/* Bottom Left Doodle: Abstract Lines (Lee Kyutae style) */}
         <div className="absolute bottom-4 left-4 opacity-40">
              <svg width="80" height="40" viewBox="0 0 100 50" fill="none">
                  <path d="M10 25 Q30 10 50 25 T90 25" stroke="#A89F91" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 4"/>
@@ -364,12 +355,10 @@ const PostcardDecoration = () => (
              </svg>
         </div>
         
-        {/* Vintage Title */}
         <div className="absolute bottom-2 right-4">
              <span className="font-serif italic text-[#C4Bdb5] text-[10px] tracking-widest">captured by momo</span>
         </div>
 
-        {/* Frame Border */}
         <div className="absolute inset-2 border border-[#EBE8E0] rounded-[2px] opacity-50"></div>
     </div>
 );
@@ -397,7 +386,6 @@ const CalendarView = ({ entries, onEntryClick }) => {
 
   const selectedEntries = entries.filter(e => e.date === getSelectedDateStr());
 
-  // --- Image Saving Logic ---
   const loadHtml2Canvas = () => {
     return new Promise((resolve, reject) => {
         if (window.html2canvas) return resolve(window.html2canvas);
@@ -542,7 +530,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Initialize state if editing an existing entry
   useEffect(() => {
     if (initialEntry) {
       setText(initialEntry.text || '');
@@ -566,7 +553,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
 
   const handleDelete = () => {
     if (initialEntry && onDelete) {
-        if (window.confirm('Are you sure you want to delete this memory?')) {
+        if (window.confirm('确定要删除这条回忆吗？')) {
             onDelete(initialEntry.id);
         }
     }
@@ -576,7 +563,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#F9F7F2]/90 backdrop-blur-sm">
         <div className="w-full max-w-sm bg-[#FDFBF7] p-6 rounded-[4px] shadow-xl border border-[#EBE8E0] relative animate-slide-up flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center absolute top-4 left-4 right-4 z-10">
-                {/* Delete Button (Only in Edit Mode) */}
                 {initialEntry ? (
                     <button onClick={handleDelete} className="text-[#FFB7B2] hover:text-[#FF6961] transition-colors">
                         <Trash2 size={18} />
@@ -590,7 +576,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
             </h3>
             
             <div className="overflow-y-auto no-scrollbar flex-1">
-                {/* Image Placeholder */}
                 <div 
                     onClick={() => fileInputRef.current.click()}
                     className="w-full aspect-video bg-[#F4F1EA] border border-dashed border-[#D4Ccc5] flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative"
@@ -624,7 +609,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
                     </button>
                 </div>
                 
-                {/* Date Input Field */}
                 <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
                     <Calendar size={12} className="text-[#C4Bdb5] mr-2" />
                     <input 
@@ -664,22 +648,23 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
             </div>
 
             <button onClick={() => { 
-                // Explicit validation: Don't allow empty entries
-                if (!text.trim() && !preview) {
-                    alert("Please write something or add a photo!");
+                // Loose validation: Allow text OR image
+                const hasText = text && text.trim().length > 0;
+                const hasImage = preview !== null && preview !== '';
+
+                if (!hasText && !hasImage) {
+                    alert("写点什么，或者传张照片吧！");
                     return;
                 }
 
-                // Use existing ID if editing, else generate new
-                const id = initialEntry ? initialEntry.id : Date.now();
-                // Fallback to today if date is empty
+                const id = initialEntry ? initialEntry.id : Date.now().toString();
                 const safeDate = date || getTodayStr();
                 
                 onSave({ 
                     id: id, 
                     date: safeDate, 
                     image: preview || null,
-                    text, 
+                    text: text || '', 
                     mood, 
                     location: location || 'Unknown',
                     tags: ['#Daily'] 
@@ -692,7 +677,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   )
 }
 
-// --- Settings Modal (For Backup & Restore) ---
 const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
     const fileInputRef = useRef(null);
 
@@ -735,21 +719,17 @@ const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
     )
 }
 
-// --- Main ---
 export default function App() {
   const [tab, setTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false); 
   const [currentEntry, setCurrentEntry] = useState(null);
   
-  // Load from local storage or use mock data
-  // Optimized: Only use MOCK_ENTRIES if specifically "first run", otherwise empty array if cleared
   const [entries, setEntries] = useState(() => {
     const saved = localStorage.getItem('momo_entries');
     return saved ? JSON.parse(saved) : MOCK_ENTRIES;
   });
 
-  // Save to local storage
   useEffect(() => {
     localStorage.setItem('momo_entries', JSON.stringify(entries));
   }, [entries]);
@@ -776,11 +756,13 @@ export default function App() {
     return matchesTag || matchesText || matchesLocation;
   });
 
-  // CRUD Handlers
   const openNewEntryModal = () => { setCurrentEntry(null); setIsModalOpen(true); };
   const openEditEntryModal = (entry) => { setCurrentEntry(entry); setIsModalOpen(true); };
   
   const handleSaveEntry = (entryData) => {
+    // Clear search when saving to ensure new entry is visible
+    setSearchTerm(''); 
+    
     if (currentEntry) {
         setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
     } else {
@@ -794,7 +776,6 @@ export default function App() {
       setIsModalOpen(false);
   };
 
-  // Settings Handlers
   const handleExportData = () => {
       const dataStr = JSON.stringify(entries);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -842,7 +823,6 @@ export default function App() {
       
       <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
         
-        {/* Header */}
         <div className="pt-12 pb-4 px-6 flex justify-between items-end sticky top-0 z-40 bg-[#F9F7F2]/80 backdrop-blur-sm transition-all shrink-0">
            <div className="flex flex-col">
                <span className="text-2xl font-serif text-[#5C4033] tracking-widest italic">momo.</span>
@@ -856,11 +836,9 @@ export default function App() {
            </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
            {tab === 'home' ? (
              <div className="animate-fade-in pt-2 px-4">
-                {/* Search Bar */}
                 <div className="mb-6 mt-2 relative group">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                         <Search size={14} className="text-[#C4Bdb5] group-focus-within:text-[#8D7B68] transition-colors" />
@@ -900,7 +878,6 @@ export default function App() {
            )}
         </div>
 
-        {/* Tab Bar */}
         <TabBar currentTab={tab} onTabChange={setTab} onAdd={openNewEntryModal} />
         
         {isModalOpen && (
