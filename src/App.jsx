@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2 } from 'lucide-react';
+import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, FileJson, Upload } from 'lucide-react';
 
 // --- Gemini API ---
 const apiKey = ""; 
@@ -180,6 +180,17 @@ const getPastDateStr = (daysAgo) => {
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+const formatDateSafe = (dateString, options) => {
+    try {
+        if (!dateString) return 'Unknown Date';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Invalid Date';
+        return date.toLocaleDateString('en-US', options);
+    } catch (e) {
+        return 'Error Date';
+    }
+};
+
 const MOCK_ENTRIES = [
   {
     id: '1',
@@ -257,7 +268,7 @@ const PolaroidCard = ({ entry, onClick }) => {
         <img src={entry.image} alt="Memory" className="w-full h-full object-cover" />
         <div className="absolute bottom-2 right-2 bg-black/20 backdrop-blur-[1px] px-1.5 py-0.5 rounded-[2px]">
             <span className="text-white/95 text-[9px] font-serif tracking-widest">
-                {new Date(entry.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
+                {formatDateSafe(entry.date, { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
             </span>
         </div>
       </div>
@@ -303,7 +314,7 @@ const NoteCard = ({ entry, onClick }) => {
             
             <div className="flex justify-between items-center mb-4 border-b border-[#F4F1EA] pb-2 border-dashed">
                 <span className="font-serif text-[#A89F91] text-[10px] tracking-widest">
-                    {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}
+                    {formatDateSafe(entry.date, { weekday: 'long' }).toUpperCase()}
                 </span>
                 <div className="scale-75 opacity-80 group-hover:scale-90 transition-transform"><MoodIcon /></div>
             </div>
@@ -363,7 +374,7 @@ const PostcardDecoration = () => (
     </div>
 );
 
-const CalendarView = ({ entries, onEntryClick }) => { // Added onEntryClick prop
+const CalendarView = ({ entries, onEntryClick }) => { 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false); 
@@ -653,12 +664,20 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
             </div>
 
             <button onClick={() => { 
+                // Explicit validation: Don't allow empty entries
+                if (!text.trim() && !preview) {
+                    alert("Please write something or add a photo!");
+                    return;
+                }
+
                 // Use existing ID if editing, else generate new
                 const id = initialEntry ? initialEntry.id : Date.now();
+                // Fallback to today if date is empty
+                const safeDate = date || getTodayStr();
                 
                 onSave({ 
                     id: id, 
-                    date: date, 
+                    date: safeDate, 
                     image: preview || null,
                     text, 
                     mood, 
@@ -673,19 +692,64 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   )
 }
 
+// --- Settings Modal (For Backup & Restore) ---
+const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
+    const fileInputRef = useRef(null);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            onImport(file);
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#F9F7F2]/90 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-xs bg-white p-6 rounded-[4px] shadow-2xl border border-[#EBE8E0] relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
+                <h3 className="text-center font-serif text-[#6B5D52] mb-8 tracking-widest text-sm">S E T T I N G S</h3>
+                
+                <div className="space-y-4">
+                    <button onClick={onExport} className="w-full flex items-center justify-between px-4 py-3 bg-[#FDFBF7] border border-[#EBE8E0] text-[#6B5D52] text-xs font-serif hover:bg-[#F4F1EA] transition-colors">
+                        <span>Backup Data (Export)</span>
+                        <Download size={16} className="text-[#8D7B68]" />
+                    </button>
+
+                    <div className="relative">
+                        <button onClick={() => fileInputRef.current.click()} className="w-full flex items-center justify-between px-4 py-3 bg-[#FDFBF7] border border-[#EBE8E0] text-[#6B5D52] text-xs font-serif hover:bg-[#F4F1EA] transition-colors">
+                            <span>Restore Data (Import)</span>
+                            <Upload size={16} className="text-[#8D7B68]" />
+                        </button>
+                        <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
+                    </div>
+
+                    <div className="h-px bg-[#F4F1EA] my-4"></div>
+
+                    <button onClick={onReset} className="w-full flex items-center justify-center px-4 py-3 text-[#FFB7B2] text-xs font-serif hover:text-[#FF6961] transition-colors">
+                        <Trash2 size={14} className="mr-2" />
+                        <span>Clear All Data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // --- Main ---
 export default function App() {
   const [tab, setTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState(null); // Track entry being edited
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Settings State
+  const [currentEntry, setCurrentEntry] = useState(null);
   
   // Load from local storage or use mock data
+  // Optimized: Only use MOCK_ENTRIES if specifically "first run", otherwise empty array if cleared
   const [entries, setEntries] = useState(() => {
     const saved = localStorage.getItem('momo_entries');
     return saved ? JSON.parse(saved) : MOCK_ENTRIES;
   });
 
-  // Save to local storage whenever entries change
+  // Save to local storage
   useEffect(() => {
     localStorage.setItem('momo_entries', JSON.stringify(entries));
   }, [entries]);
@@ -712,35 +776,62 @@ export default function App() {
     return matchesTag || matchesText || matchesLocation;
   });
 
-  // Open Modal for Creating New Entry
-  const openNewEntryModal = () => {
-    setCurrentEntry(null); // Reset current entry
-    setIsModalOpen(true);
-  };
-
-  // Open Modal for Editing Existing Entry
-  const openEditEntryModal = (entry) => {
-    setCurrentEntry(entry); // Set the entry to be edited
-    setIsModalOpen(true);
-  };
-
-  // Handle Save (Create or Update)
+  // CRUD Handlers
+  const openNewEntryModal = () => { setCurrentEntry(null); setIsModalOpen(true); };
+  const openEditEntryModal = (entry) => { setCurrentEntry(entry); setIsModalOpen(true); };
+  
   const handleSaveEntry = (entryData) => {
     if (currentEntry) {
-        // Update existing
         setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
     } else {
-        // Create new
         setEntries(prev => [entryData, ...prev]);
     }
     setIsModalOpen(false);
   };
 
-  // Handle Delete
   const handleDeleteEntry = (id) => {
       setEntries(prev => prev.filter(e => e.id !== id));
       setIsModalOpen(false);
   };
+
+  // Settings Handlers
+  const handleExportData = () => {
+      const dataStr = JSON.stringify(entries);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const exportFileDefaultName = `momo-backup-${new Date().toISOString().slice(0,10)}.json`;
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+  };
+
+  const handleImportData = (file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const importedData = JSON.parse(event.target.result);
+              if (Array.isArray(importedData)) {
+                  if(window.confirm(`Found ${importedData.length} memories. Replace current data?`)) {
+                      setEntries(importedData);
+                      setIsSettingsOpen(false);
+                      alert("Restore successful!");
+                  }
+              } else {
+                  alert("Invalid backup file.");
+              }
+          } catch (e) {
+              alert("Error parsing file.");
+          }
+      };
+      reader.readAsText(file);
+  };
+
+  const handleResetData = () => {
+      if(window.confirm("This will delete ALL your memories permanently. Are you sure?")) {
+          setEntries([]);
+          setIsSettingsOpen(false);
+      }
+  }
 
   return (
     <div 
@@ -757,7 +848,12 @@ export default function App() {
                <span className="text-2xl font-serif text-[#5C4033] tracking-widest italic">momo.</span>
                <span className="text-[9px] text-[#A89F91] tracking-[0.4em] uppercase mt-1 ml-1">Daily Log</span>
            </div>
-           <WeatherWidget />
+           <div className="flex items-center gap-2">
+               <WeatherWidget />
+               <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-[#C4Bdb5] hover:text-[#8D7B68]">
+                   <Settings size={18} />
+               </button>
+           </div>
         </div>
 
         {/* Content */}
@@ -813,6 +909,15 @@ export default function App() {
                 onSave={handleSaveEntry} 
                 onDelete={handleDeleteEntry}
                 initialEntry={currentEntry} 
+            />
+        )}
+
+        {isSettingsOpen && (
+            <SettingsModal 
+                onClose={() => setIsSettingsOpen(false)} 
+                onExport={handleExportData}
+                onImport={handleImportData}
+                onReset={handleResetData}
             />
         )}
       </div>
