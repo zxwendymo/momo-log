@@ -224,16 +224,18 @@ const WeatherWidget = () => (
 );
 
 const TabBar = ({ currentTab, onTabChange, onAdd }) => (
-  <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-md px-8 py-3 rounded-full flex items-center gap-10 shadow-[0_4px_20px_-5px_rgba(141,123,104,0.15)] border border-[#EBE8E0] z-50">
-    <button onClick={() => onTabChange('home')} className={`${currentTab === 'home' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
-      <Home size={20} />
-    </button>
-    <button onClick={onAdd} className="bg-[#8D7B68] text-[#F9F7F2] w-10 h-10 rounded-full flex items-center justify-center shadow-md transform hover:scale-105 transition-all hover:bg-[#786958]">
-      <Plus size={20} />
-    </button>
-    <button onClick={() => onTabChange('calendar')} className={`${currentTab === 'calendar' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
-      <Calendar size={20} />
-    </button>
+  <div className="fixed bottom-0 left-0 right-0 pb-6 pt-4 bg-gradient-to-t from-[#F9F7F2] to-transparent z-50 flex justify-center items-center pointer-events-none">
+    <div className="bg-white/90 backdrop-blur-md px-8 py-3 rounded-full flex items-center gap-10 shadow-[0_4px_20px_-5px_rgba(141,123,104,0.15)] border border-[#EBE8E0] pointer-events-auto">
+      <button onClick={() => onTabChange('home')} className={`${currentTab === 'home' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
+        <Home size={20} />
+      </button>
+      <button onClick={onAdd} className="bg-[#8D7B68] text-[#F9F7F2] w-10 h-10 rounded-full flex items-center justify-center shadow-md transform hover:scale-105 transition-all hover:bg-[#786958]">
+        <Plus size={20} />
+      </button>
+      <button onClick={() => onTabChange('calendar')} className={`${currentTab === 'calendar' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
+        <Calendar size={20} />
+      </button>
+    </div>
   </div>
 );
 
@@ -667,10 +669,10 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F9F7F2] font-sans flex justify-center py-0 sm:py-8 text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
+    <div className="fixed inset-0 bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
       <GrainOverlay isExporting={false} />
       
-      <div className="w-full max-w-[390px] bg-[#F9F7F2] min-h-screen sm:min-h-[800px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
+      <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
         
         {/* Header */}
         <div className="pt-12 pb-4 px-6 flex justify-between items-end sticky top-0 z-40 bg-[#F9F7F2]/80 backdrop-blur-sm transition-all">
