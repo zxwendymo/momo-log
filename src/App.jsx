@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, Calendar as CalendarIcon, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload, Image as ImageIcon, Grid } from 'lucide-react';
+import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload, Image as ImageIcon, Grid } from 'lucide-react';
 
 // --- IndexedDB Helper (The Big Warehouse) ---
 const DB_NAME = 'MomoLogDB';
@@ -723,19 +723,31 @@ const AppContent = () => {
   const [currentEntry, setCurrentEntry] = useState(null);
   const [entries, setEntries] = useState([]); 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null); 
+  const [selectedDate, setSelectedDate] = useState(null); // Lifted state: Default to NULL (All)
 
   // Migration & Load
   useEffect(() => {
-    const loadData = async () => {
+    const migrateData = async () => {
+      const localData = localStorage.getItem('momo_entries');
+      if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            for (const entry of parsed) await dbHelper.put(entry);
+            localStorage.setItem('momo_entries_backup', localData); 
+            localStorage.removeItem('momo_entries');
+          }
+        } catch (e) { console.error("Migration failed", e); }
+      }
       const allDocs = await dbHelper.getAll();
       const sorted = allDocs.sort((a, b) => b.id - a.id); 
       setEntries(sorted);
     };
-    loadData();
+    migrateData();
   }, []);
 
   const openNewEntryModal = () => { 
+      // If a date is selected in calendar, use that. Otherwise today.
       setCurrentEntry(null); 
       setIsModalOpen(true); 
   };
