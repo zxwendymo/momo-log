@@ -694,7 +694,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
                 </div>
                 {error && <p className="text-center text-red-400 text-xs mb-4 font-serif">{error}</p>}
                 <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
-                    <CalendarIcon size={12} className="text-[#C4Bdb5] mr-2" />
+                    <Calendar size={12} className="text-[#C4Bdb5] mr-2" />
                     <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="text-center text-xs text-[#6B5D52] font-serif bg-transparent focus:outline-none w-full uppercase tracking-widest cursor-pointer" style={{ colorScheme: 'light' }} />
                 </div>
                 <div className="mb-6 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
