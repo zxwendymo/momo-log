@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload } from 'lucide-react';
 
 // --- IndexedDB Helper (The Big Warehouse) ---
-// 这是一个浏览器内置的数据库，容量极大，专门用来存图片
 const DB_NAME = 'MomoLogDB';
 const STORE_NAME = 'entries';
 const DB_VERSION = 1;
@@ -63,7 +62,7 @@ const dbHelper = {
   }
 };
 
-// --- Error Boundary Component (Safety Airbag) ---
+// --- Error Boundary Component ---
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -127,7 +126,7 @@ const callGemini = async (prompt, imageBase64 = null) => {
   }
 };
 
-// --- Robust Image Compression (Still needed for performance) ---
+// --- Robust Image Compression (Better Quality) ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -137,7 +136,8 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_DIM = 1024; // Can be larger now with IndexedDB
+        // Improved Resolution: 1024px for better detail
+        const MAX_DIM = 1024; 
         let width = img.width;
         let height = img.height;
 
@@ -157,7 +157,8 @@ const compressImage = (file) => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // Better quality
+        // Improved Quality: 0.8 for clearer images
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(dataUrl);
       };
       img.onerror = (e) => reject(e);
@@ -652,7 +653,7 @@ const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
     )
 }
 
-// --- App Content using IndexedDB ---
+// --- Main App Component ---
 const AppContent = () => {
   const [tab, setTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -661,16 +662,35 @@ const AppContent = () => {
   const [entries, setEntries] = useState([]); // Initialize empty
   const [searchTerm, setSearchTerm] = useState(''); 
 
-  // Load entries from IndexedDB on mount
+  // Migration Effect: LocalStorage -> IndexedDB
   useEffect(() => {
-    dbHelper.getAll().then(loadedEntries => {
-        // If DB is empty, use MOCK_ENTRIES as initial data if desired, or just empty
-        // For now, if completely empty, maybe we keep it empty or load defaults
-        // Let's just use what's in DB. If empty, it's empty.
-        // Sort by ID descending (newest first usually) or Date
-        const sorted = loadedEntries.sort((a, b) => b.id - a.id);
-        setEntries(sorted);
-    }).catch(err => console.error("Failed to load DB", err));
+    const migrateData = async () => {
+      const localData = localStorage.getItem('momo_entries');
+      if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // console.log("Migrating data...", parsed);
+            for (const entry of parsed) {
+              await dbHelper.put(entry);
+            }
+            // Rename key to avoid re-migration next time
+            localStorage.setItem('momo_entries_backup', localData); 
+            localStorage.removeItem('momo_entries');
+            // alert("Data migrated from LocalStorage to IndexedDB!"); 
+          }
+        } catch (e) {
+          console.error("Migration failed", e);
+        }
+      }
+      
+      // Load all data (including just migrated)
+      const allDocs = await dbHelper.getAll();
+      const sorted = allDocs.sort((a, b) => b.id - a.id); // Sort desc
+      setEntries(sorted);
+    };
+    
+    migrateData();
   }, []);
 
   const filteredEntries = entries.filter(entry => {
