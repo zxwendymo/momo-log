@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search } from 'lucide-react';
+import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2 } from 'lucide-react';
 
 // --- Gemini API ---
 const apiKey = ""; 
@@ -178,6 +178,8 @@ const getPastDateStr = (daysAgo) => {
     return `${year}-${month}-${day}`;
 };
 
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 const MOCK_ENTRIES = [
   {
     id: '1',
@@ -240,12 +242,15 @@ const TabBar = ({ currentTab, onTabChange, onAdd }) => (
 );
 
 // Style 1: Polaroid Card (For Entries with Images)
-const PolaroidCard = ({ entry }) => {
+const PolaroidCard = ({ entry, onClick }) => {
   const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
   const MoodIcon = moodObj.icon;
   
   return (
-    <div className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px]">
+    <div 
+        onClick={onClick}
+        className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px] cursor-pointer active:scale-95"
+    >
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-6 bg-[#F4F1EA] opacity-90 rotate-1 shadow-sm z-10 border-l border-r border-[#EBE8E0]/50"></div>
       
       <div className="aspect-[4/3] w-full overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
@@ -284,12 +289,15 @@ const PolaroidCard = ({ entry }) => {
 };
 
 // Style 2: Note Card (For Text-Only Entries)
-const NoteCard = ({ entry }) => {
+const NoteCard = ({ entry, onClick }) => {
     const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
     const MoodIcon = moodObj.icon;
 
     return (
-        <div className="mb-6 mx-4 bg-[#FFFDF5] p-5 shadow-[0_2px_8px_-2px_rgba(141,123,104,0.1)] border border-[#EBE8E0] relative rounded-[1px] group">
+        <div 
+            onClick={onClick}
+            className="mb-6 mx-4 bg-[#FFFDF5] p-5 shadow-[0_2px_8px_-2px_rgba(141,123,104,0.1)] border border-[#EBE8E0] relative rounded-[1px] group cursor-pointer active:scale-95 transition-transform"
+        >
             {/* Pin Effect */}
             <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full bg-[#E6C9BB] shadow-sm z-10 border border-[#D7C4BB]"></div>
             
@@ -355,10 +363,10 @@ const PostcardDecoration = () => (
     </div>
 );
 
-const CalendarView = ({ entries }) => {
+const CalendarView = ({ entries, onEntryClick }) => { // Added onEntryClick prop
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isExporting, setIsExporting] = useState(false); // State to control export view
+  const [isExporting, setIsExporting] = useState(false); 
   const calendarRef = useRef(null);
 
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -391,9 +399,7 @@ const CalendarView = ({ entries }) => {
   };
 
   const handleSaveImage = async () => {
-      setIsExporting(true); // 1. Enter Export Mode (Re-renders UI)
-      
-      // 2. Wait for React to render the export view
+      setIsExporting(true); 
       await new Promise(r => setTimeout(r, 200)); 
 
       try {
@@ -402,7 +408,7 @@ const CalendarView = ({ entries }) => {
           
           const canvas = await window.html2canvas(calendarRef.current, {
               useCORS: true,
-              scale: 5, // Higher resolution
+              scale: 5, 
               backgroundColor: '#FDFBF7',
           });
           
@@ -414,23 +420,18 @@ const CalendarView = ({ entries }) => {
           console.error("Save failed:", err);
           alert("保存图片失败");
       } finally {
-          setIsExporting(false); // 3. Exit Export Mode
+          setIsExporting(false); 
       }
   };
 
   return (
     <div className="animate-fade-in flex flex-col w-full">
-      {/* Calendar Content to Capture 
-         Optimized Layout for Export Mode: Less padding, smaller gap, larger grid
-      */}
       <div 
         ref={calendarRef} 
         className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}
       >
-        {/* Export Decoration Layer - Only visible during export */}
         {isExporting && <PostcardDecoration />}
 
-        {/* Header */}
         <div className={`flex justify-between items-center mb-6 pt-2 relative z-10 ${isExporting ? 'px-0 justify-center mb-4' : 'px-4'}`}>
             {!isExporting && <button onClick={prevMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronLeft size={18}/></button>}
             
@@ -441,7 +442,6 @@ const CalendarView = ({ entries }) => {
                 </h2>
                 {!isExporting && <div className="w-8 h-[1px] bg-[#D4Ccc5] mx-auto mt-2"></div>}
                 
-                {/* Download Button - Hidden during export */}
                 {!isExporting && (
                     <button 
                         onClick={handleSaveImage}
@@ -456,7 +456,6 @@ const CalendarView = ({ entries }) => {
             {!isExporting && <button onClick={nextMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronRight size={18}/></button>}
         </div>
 
-        {/* Grid - Tighter Gap during export for larger cells */}
         <div className={`grid grid-cols-7 relative z-10 ${isExporting ? 'gap-1.5 px-1' : 'gap-2 px-2 mb-2'}`}>
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className={`text-center font-serif mb-1 text-[#A89F91] ${isExporting ? 'text-[10px] font-bold' : 'text-[10px]'}`}>{d}</div>)}
             {blanks.map(i => <div key={`blank-${i}`} />)}
@@ -467,7 +466,6 @@ const CalendarView = ({ entries }) => {
             const dateStr = `${year}-${month}-${dayStr}`;
             
             const entry = entries.find(e => e.date === dateStr);
-            // Hide selection ring during export
             const isSelected = !isExporting && selectedDate.getDate() === day && selectedDate.getMonth() === currentDate.getMonth() && selectedDate.getFullYear() === currentDate.getFullYear();
             
             return (
@@ -481,14 +479,12 @@ const CalendarView = ({ entries }) => {
                             {entry.image ? (
                                 <img src={entry.image} className="w-full h-full object-cover grayscale-[0.1]" crossOrigin="anonymous" />
                             ) : (
-                                // Text note texture
                                 <div className="w-full h-full bg-[#FFFDF5] flex items-center justify-center flex-col gap-1 p-1">
                                     <div className="w-full h-[1px] bg-[#EBE8E0]"></div>
                                     <div className="w-full h-[1px] bg-[#EBE8E0]"></div>
                                     <div className="w-2/3 h-[1px] bg-[#EBE8E0] self-start"></div>
                                 </div>
                             )}
-                            {/* Tiny selection indicator dot if selected */}
                             {isSelected && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#8D7B68] rounded-full"></div>}
                         </div>
                     ) : (
@@ -509,9 +505,9 @@ const CalendarView = ({ entries }) => {
               <div className="space-y-4 animate-slide-up">
                   {selectedEntries.map(entry => (
                       entry.image ? (
-                          <PolaroidCard key={entry.id} entry={entry} />
+                          <PolaroidCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} />
                       ) : (
-                          <NoteCard key={entry.id} entry={entry} />
+                          <NoteCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} />
                       )
                   ))}
               </div>
@@ -526,14 +522,25 @@ const CalendarView = ({ entries }) => {
   );
 };
 
-const AddModal = ({ onClose, onSave }) => {
+const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   const [text, setText] = useState('');
   const [location, setLocation] = useState(''); 
-  const [date, setDate] = useState(getTodayStr()); // Added Date State
+  const [date, setDate] = useState(getTodayStr());
   const [mood, setMood] = useState(MOODS[0].id);
   const [preview, setPreview] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Initialize state if editing an existing entry
+  useEffect(() => {
+    if (initialEntry) {
+      setText(initialEntry.text || '');
+      setLocation(initialEntry.location || '');
+      setDate(initialEntry.date || getTodayStr());
+      setMood(initialEntry.mood || MOODS[0].id);
+      setPreview(initialEntry.image || null);
+    }
+  }, [initialEntry]);
 
   const handleAiHelp = async () => {
     setIsAiLoading(true);
@@ -546,12 +553,30 @@ const AddModal = ({ onClose, onSave }) => {
     } catch(e) {} finally { setIsAiLoading(false); }
   };
 
+  const handleDelete = () => {
+    if (initialEntry && onDelete) {
+        if (window.confirm('Are you sure you want to delete this memory?')) {
+            onDelete(initialEntry.id);
+        }
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#F9F7F2]/90 backdrop-blur-sm">
         <div className="w-full max-w-sm bg-[#FDFBF7] p-6 rounded-[4px] shadow-xl border border-[#EBE8E0] relative animate-slide-up flex flex-col max-h-[90vh]">
-            <button onClick={onClose} className="absolute top-4 right-4 text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
+            <div className="flex justify-between items-center absolute top-4 left-4 right-4 z-10">
+                {/* Delete Button (Only in Edit Mode) */}
+                {initialEntry ? (
+                    <button onClick={handleDelete} className="text-[#FFB7B2] hover:text-[#FF6961] transition-colors">
+                        <Trash2 size={18} />
+                    </button>
+                ) : <div></div>}
+                <button onClick={onClose} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
+            </div>
             
-            <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-widest text-sm">N E W &nbsp; L O G</h3>
+            <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-widest text-sm mt-2">
+                {initialEntry ? 'E D I T &nbsp; L O G' : 'N E W &nbsp; L O G'}
+            </h3>
             
             <div className="overflow-y-auto no-scrollbar flex-1">
                 {/* Image Placeholder */}
@@ -588,7 +613,7 @@ const AddModal = ({ onClose, onSave }) => {
                     </button>
                 </div>
                 
-                {/* Date Input Field - NEW */}
+                {/* Date Input Field */}
                 <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
                     <Calendar size={12} className="text-[#C4Bdb5] mr-2" />
                     <input 
@@ -596,7 +621,7 @@ const AddModal = ({ onClose, onSave }) => {
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
                         className="text-center text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] bg-transparent focus:outline-none w-full uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
-                        style={{ colorScheme: 'light' }} // Ensures calendar icon inside input matches theme roughly
+                        style={{ colorScheme: 'light' }} 
                     />
                 </div>
 
@@ -628,18 +653,20 @@ const AddModal = ({ onClose, onSave }) => {
             </div>
 
             <button onClick={() => { 
+                // Use existing ID if editing, else generate new
+                const id = initialEntry ? initialEntry.id : Date.now();
+                
                 onSave({ 
-                    id: Date.now(), 
-                    date: date, // Use selected date
+                    id: id, 
+                    date: date, 
                     image: preview || null,
                     text, 
                     mood, 
                     location: location || 'Unknown',
                     tags: ['#Daily'] 
                 }); 
-                onClose(); 
             }} className="w-full py-3 mt-4 bg-[#8D7B68] text-[#F9F7F2] text-xs font-serif tracking-widest hover:bg-[#786958]">
-                S A V E
+                {initialEntry ? 'U P D A T E' : 'S A V E'}
             </button>
         </div>
     </div>
@@ -649,9 +676,10 @@ const AddModal = ({ onClose, onSave }) => {
 // --- Main ---
 export default function App() {
   const [tab, setTab] = useState('home');
-  const [modal, setModal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentEntry, setCurrentEntry] = useState(null); // Track entry being edited
   const [entries, setEntries] = useState(MOCK_ENTRIES);
-  const [searchTerm, setSearchTerm] = useState(''); // 新增搜索状态
+  const [searchTerm, setSearchTerm] = useState(''); 
 
   // Dynamic Viewport Height Hook
   useEffect(() => {
@@ -659,33 +687,54 @@ export default function App() {
       const doc = document.documentElement;
       doc.style.setProperty('--app-height', `${window.innerHeight}px`);
     };
-    // Call on init and resize
     window.addEventListener('resize', setAppHeight);
     setAppHeight();
-    
     return () => window.removeEventListener('resize', setAppHeight);
   }, []);
 
-  // 筛选逻辑：根据标签、内容或地点进行搜索
   const filteredEntries = entries.filter(entry => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    
-    // Check tags
     const matchesTag = entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(term));
-    // Check text content
     const matchesText = entry.text && entry.text.toLowerCase().includes(term);
-    // Check location
     const matchesLocation = entry.location && entry.location.toLowerCase().includes(term);
-
     return matchesTag || matchesText || matchesLocation;
   });
 
+  // Open Modal for Creating New Entry
+  const openNewEntryModal = () => {
+    setCurrentEntry(null); // Reset current entry
+    setIsModalOpen(true);
+  };
+
+  // Open Modal for Editing Existing Entry
+  const openEditEntryModal = (entry) => {
+    setCurrentEntry(entry); // Set the entry to be edited
+    setIsModalOpen(true);
+  };
+
+  // Handle Save (Create or Update)
+  const handleSaveEntry = (entryData) => {
+    if (currentEntry) {
+        // Update existing
+        setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
+    } else {
+        // Create new
+        setEntries(prev => [entryData, ...prev]);
+    }
+    setIsModalOpen(false);
+  };
+
+  // Handle Delete
+  const handleDeleteEntry = (id) => {
+      setEntries(prev => prev.filter(e => e.id !== id));
+      setIsModalOpen(false);
+  };
+
   return (
-    // Updated Root Container: Use inline style for dynamic height
     <div 
         className="fixed inset-0 w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white"
-        style={{ height: 'var(--app-height, 100vh)' }} // Fallback to 100vh
+        style={{ height: 'var(--app-height, 100vh)' }} 
     >
       <GrainOverlay isExporting={false} />
       
@@ -700,11 +749,11 @@ export default function App() {
            <WeatherWidget />
         </div>
 
-        {/* Content - Explicit touch action and padding */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
            {tab === 'home' ? (
              <div className="animate-fade-in pt-2 px-4">
-                {/* --- 新增搜索栏开始 --- */}
+                {/* Search Bar */}
                 <div className="mb-6 mt-2 relative group">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                         <Search size={14} className="text-[#C4Bdb5] group-focus-within:text-[#8D7B68] transition-colors" />
@@ -713,7 +762,7 @@ export default function App() {
                         type="text" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search memories (tags, text, location)..."
+                        placeholder="Search memories..."
                         className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2.5 pl-10 pr-4 text-xs text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] focus:bg-white font-serif tracking-wide transition-all shadow-[0_2px_10px_-4px_rgba(141,123,104,0.05)]"
                     />
                     {searchTerm && (
@@ -725,11 +774,12 @@ export default function App() {
                         </button>
                     )}
                 </div>
-                {/* --- 新增搜索栏结束 --- */}
 
                 {filteredEntries.length > 0 ? (
                     filteredEntries.map(e => (
-                        e.image ? <PolaroidCard key={e.id} entry={e} /> : <NoteCard key={e.id} entry={e} />
+                        e.image ? 
+                        <PolaroidCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} /> : 
+                        <NoteCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} />
                     ))
                 ) : (
                     <div className="flex flex-col items-center justify-center py-12 opacity-50 gap-2">
@@ -739,14 +789,21 @@ export default function App() {
                 )}
              </div>
            ) : (
-             <CalendarView entries={entries} />
+             <CalendarView entries={entries} onEntryClick={openEditEntryModal} />
            )}
         </div>
 
         {/* Tab Bar */}
-        <TabBar currentTab={tab} onTabChange={setTab} onAdd={() => setModal(true)} />
+        <TabBar currentTab={tab} onTabChange={setTab} onAdd={openNewEntryModal} />
         
-        {modal && <AddModal onClose={() => setModal(false)} onSave={e => setEntries([e, ...entries])} />}
+        {isModalOpen && (
+            <EntryModal 
+                onClose={() => setIsModalOpen(false)} 
+                onSave={handleSaveEntry} 
+                onDelete={handleDeleteEntry}
+                initialEntry={currentEntry} 
+            />
+        )}
       </div>
 
       <style>{`
