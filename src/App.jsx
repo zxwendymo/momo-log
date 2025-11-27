@@ -181,7 +181,9 @@ const getPastDateStr = (daysAgo) => {
 const formatDateSafe = (dateString, options) => {
     try {
         if (!dateString) return 'Unknown Date';
-        const date = new Date(dateString);
+        // Replace - with / to fix browser compatibility issues with date parsing
+        const safeDateString = dateString.replace(/-/g, '/');
+        const date = new Date(safeDateString);
         if (isNaN(date.getTime())) return 'Invalid Date';
         return date.toLocaleDateString('en-US', options);
     } catch (e) {
@@ -250,6 +252,7 @@ const TabBar = ({ currentTab, onTabChange, onAdd }) => (
   </div>
 );
 
+// Style 1: Polaroid Card (For Entries with Images)
 const PolaroidCard = ({ entry, onClick }) => {
   const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
   const MoodIcon = moodObj.icon;
@@ -296,6 +299,7 @@ const PolaroidCard = ({ entry, onClick }) => {
   );
 };
 
+// Style 2: Note Card (For Text-Only Entries)
 const NoteCard = ({ entry, onClick }) => {
     const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
     const MoodIcon = moodObj.icon;
@@ -648,8 +652,8 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
             </div>
 
             <button onClick={() => { 
-                // Loose validation: Allow text OR image
-                const hasText = text && text.trim().length > 0;
+                // Fix: Ensure correct type checking
+                const hasText = text && typeof text === 'string' && text.trim().length > 0;
                 const hasImage = preview !== null && preview !== '';
 
                 if (!hasText && !hasImage) {
@@ -736,7 +740,6 @@ export default function App() {
 
   const [searchTerm, setSearchTerm] = useState(''); 
 
-  // Dynamic Viewport Height Hook
   useEffect(() => {
     const setAppHeight = () => {
       const doc = document.documentElement;
@@ -750,9 +753,12 @@ export default function App() {
   const filteredEntries = entries.filter(entry => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
+    const safeText = (entry.text || '').toLowerCase(); // Safety check
+    const safeLoc = (entry.location || '').toLowerCase(); // Safety check
+    
     const matchesTag = entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(term));
-    const matchesText = entry.text && entry.text.toLowerCase().includes(term);
-    const matchesLocation = entry.location && entry.location.toLowerCase().includes(term);
+    const matchesText = safeText.includes(term);
+    const matchesLocation = safeLoc.includes(term);
     return matchesTag || matchesText || matchesLocation;
   });
 
@@ -760,8 +766,7 @@ export default function App() {
   const openEditEntryModal = (entry) => { setCurrentEntry(entry); setIsModalOpen(true); };
   
   const handleSaveEntry = (entryData) => {
-    // Clear search when saving to ensure new entry is visible
-    setSearchTerm(''); 
+    setSearchTerm(''); // Clear search on save to show new entry
     
     if (currentEntry) {
         setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
