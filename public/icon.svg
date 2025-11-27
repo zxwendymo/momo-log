@@ -1,0 +1,120 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definitions for Watercolor/Pencil Texture Filters -->
+  <defs>
+    <!-- Paper Texture Filter -->
+    <filter id="paper" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" result="noise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.1 0" in="noise" result="coloredNoise"/>
+      <feComposite operator="in" in="coloredNoise" in2="SourceGraphic" result="composite"/>
+      <feBlend mode="multiply" in="composite" in2="SourceGraphic"/>
+    </filter>
+
+    <!-- Wobbly/Hand-drawn Edge Filter -->
+    <filter id="wobbly">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+    </filter>
+    
+    <!-- Crayon Sketch Stroke Filter -->
+    <filter id="crayon">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <!-- Background: Warm Cream Paper -->
+  <rect width="512" height="512" fill="#F9F7F2" filter="url(#paper)"/>
+
+  <!-- Container Group with Wobbly Filter applied for hand-drawn feel -->
+  <g filter="url(#wobbly)">
+    
+    <!-- === Left Cat: Short-haired Ragdoll === -->
+    <!-- Moved left (translate -70) and up (translate 20) to separate and center vertically -->
+    <g transform="translate(-70, 20)"> 
+      
+      <!-- Tail (Curving up on the left, shortened to fit) -->
+      <path d="M120 350 Q 90 350, 80 300 Q 75 250, 100 220" stroke="#6D5446" stroke-width="14" stroke-linecap="round" fill="none" filter="url(#crayon)"/>
+
+      <!-- Body -->
+      <path d="M180 400 C 140 400, 120 350, 130 300 C 140 250, 280 250, 290 300 C 300 350, 280 400, 240 400 Z" fill="#F5E6E0" />
+      
+      <!-- Head -->
+      <circle cx="210" cy="260" r="90" fill="#FFF5EE" stroke="#E6D2C9" stroke-width="2"/>
+      
+      <!-- Brown Ears -->
+      <path d="M135 190 Q 120 140, 160 170" fill="#6D5446" stroke="#6D5446" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M285 190 Q 300 140, 260 170" fill="#6D5446" stroke="#6D5446" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- Face Mask -->
+      <path d="M210 260 Q 160 240, 150 280 Q 170 320, 210 290 Q 250 320, 270 280 Q 260 240, 210 260" fill="#8D7B68" fill-opacity="0.3" filter="url(#crayon)"/>
+
+      <!-- Eyes (Blue) -->
+      <circle cx="175" cy="265" r="8" fill="#87CEEB"/>
+      <circle cx="245" cy="265" r="8" fill="#87CEEB"/>
+      <circle cx="175" cy="265" r="14" stroke="#87CEEB" stroke-width="3" fill="none" opacity="0.6"/>
+      <circle cx="245" cy="265" r="14" stroke="#87CEEB" stroke-width="3" fill="none" opacity="0.6"/>
+
+      <!-- Nose & Mouth -->
+      <path d="M206 285 Q 210 290, 214 285" stroke="#6D5446" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <circle cx="210" cy="282" r="3" fill="#FFB7B2"/>
+      
+      <!-- Blush -->
+      <circle cx="150" cy="290" r="15" fill="#FFB7B2" fill-opacity="0.4" filter="url(#crayon)"/>
+      <circle cx="270" cy="290" r="15" fill="#FFB7B2" fill-opacity="0.4" filter="url(#crayon)"/>
+    </g>
+
+
+    <!-- === Right Cat: Long-haired Cow Cat === -->
+    <!-- Moved right (translate 70) and up (translate 20) to separate and center vertically -->
+    <g transform="translate(70, 20)"> 
+      
+      <!-- Tail (Curving up on the right, shortened to fit) -->
+      <path d="M390 350 Q 420 350, 430 300 Q 435 250, 410 220" stroke="#2D2D2D" stroke-width="14" stroke-linecap="round" fill="none" filter="url(#crayon)"/>
+      <!-- White tip on tail -->
+      <path d="M410 220 Q 405 215, 415 210" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" fill="none" filter="url(#crayon)"/>
+
+      <!-- Fluffy Body -->
+      <path d="M250 420 Q 200 420, 200 350 Q 200 280, 260 270 Q 320 260, 360 300 Q 400 350, 350 420 Z" fill="#FFFFFF" stroke="#D3D3D3" stroke-width="1"/>
+      
+      <!-- Black Patches on Body -->
+      <path d="M340 420 Q 380 380, 360 320 Q 340 280, 300 350 Z" fill="#2D2D2D" filter="url(#crayon)"/>
+      
+      <!-- Head -->
+      <path d="M220 220 Q 200 280, 250 320 Q 300 360, 350 300 Q 400 240, 320 200 Q 260 180, 220 220" fill="#FFFFFF"/>
+      
+      <!-- Black Ears (Both) -->
+      <path d="M230 220 L 210 160 L 260 200 Z" fill="#2D2D2D" stroke="#2D2D2D" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M330 200 L 360 150 L 370 220 Z" fill="#2D2D2D" stroke="#2D2D2D" stroke-width="3" stroke-linejoin="round"/>
+
+      <!-- Symmetrical Cow Pattern (Black Mask) -->
+      <path d="M280 220 Q 220 200, 220 270 Q 240 310, 290 260 Z" fill="#2D2D2D" filter="url(#crayon)"/>
+      <path d="M280 220 Q 340 200, 340 270 Q 320 310, 270 260 Z" fill="#2D2D2D" filter="url(#crayon)"/>
+
+      <!-- Eyes -->
+      <circle cx="255" cy="260" r="7" fill="#FFFACD"/>
+      <circle cx="255" cy="260" r="3" fill="#000"/>
+      
+      <circle cx="305" cy="260" r="7" fill="#90EE90"/>
+      <circle cx="305" cy="260" r="3" fill="#000"/>
+
+      <!-- Nose -->
+      <ellipse cx="280" cy="285" rx="4" ry="3" fill="#FFB7B2"/>
+      
+      <!-- Whiskers -->
+      <path d="M340 280 Q 370 270, 390 260" stroke="#D7C4BB" stroke-width="1" fill="none"/>
+      <path d="M340 290 Q 370 295, 390 300" stroke="#D7C4BB" stroke-width="1" fill="none"/>
+    </g>
+
+    <!-- Hand-drawn Heart between them (Centered) -->
+    <path d="M256 220 C 240 200, 220 220, 256 260 C 290 220, 270 200, 256 220" fill="#FF6B6B" fill-opacity="0.6" filter="url(#crayon)"/>
+
+  </g>
+
+  <!-- Text: "momo" (Centered horizontally, moved up to balance vertically) -->
+  <g transform="translate(0, 0)">
+    <path d="M180 460 Q 190 440, 200 460 Q 210 440, 220 460" stroke="#8D7B68" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.8"/>
+    <circle cx="240" cy="460" r="8" stroke="#8D7B68" stroke-width="8" fill="none" opacity="0.8"/>
+    <path d="M260 460 Q 270 440, 280 460 Q 290 440, 300 460" stroke="#8D7B68" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.8"/>
+    <circle cx="320" cy="460" r="8" stroke="#8D7B68" stroke-width="8" fill="none" opacity="0.8"/>
+  </g>
+</svg>
