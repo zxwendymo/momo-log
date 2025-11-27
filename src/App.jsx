@@ -73,7 +73,7 @@ const callGemini = async (prompt, imageBase64 = null) => {
   }
 };
 
-// --- Robust Image Compression (Max 500px) ---
+// --- Robust Image Compression (Better Quality) ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -83,8 +83,8 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Much stricter limit for mobile safety
-        const MAX_DIM = 500; 
+        // Improved Resolution: 1024px for better detail
+        const MAX_DIM = 1024; 
         let width = img.width;
         let height = img.height;
 
@@ -104,8 +104,8 @@ const compressImage = (file) => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        // Low quality to save space (0.5)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+        // Improved Quality: 0.8 for clearer images
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(dataUrl);
       };
       img.onerror = (e) => reject(e);
@@ -462,7 +462,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
   };
 
   const handleSave = () => {
-      // Logic: Allow EITHER text OR image
       const hasText = text && String(text).trim().length > 0;
       const hasImage = preview && String(preview).length > 0;
 
@@ -500,11 +499,23 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
                 {initialEntry ? 'E D I T &nbsp; L O G' : 'N E W &nbsp; L O G'}
             </h3>
             <div className="overflow-y-auto no-scrollbar flex-1">
-                <div onClick={() => fileInputRef.current.click()} className="w-full aspect-video bg-[#F4F1EA] border border-dashed border-[#D4Ccc5] flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
-                    {preview ? <img src={preview} className="w-full h-full object-cover p-2 bg-white shadow-sm" /> : <Camera className="text-[#C4Bdb5]" size={24} />}
-                    <span className="text-[10px] text-[#C4Bdb5] mt-2 font-serif">{preview ? 'Change Photo' : 'Add Photo'}</span>
+                <div onClick={() => fileInputRef.current.click()} className="w-full flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
+                    {preview ? (
+                        // Full image display without cropping
+                        <div className="w-full relative">
+                            <img src={preview} className="w-full h-auto max-h-[60vh] object-contain rounded-[2px] shadow-sm" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 hover:opacity-100 transition-opacity">
+                                <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">Change Photo</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="w-full aspect-video bg-[#F4F1EA] border border-dashed border-[#D4Ccc5] flex flex-col items-center justify-center rounded-[2px]">
+                            <Camera className="text-[#C4Bdb5]" size={24} />
+                            <span className="text-[10px] text-[#C4Bdb5] mt-2 font-serif">Add Photo</span>
+                        </div>
+                    )}
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
-                    {preview && <button onClick={(e) => { e.stopPropagation(); setPreview(null); fileInputRef.current.value = ''; }} className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-[#8D7B68] hover:bg-white"><X size={12} /></button>}
+                    {preview && <button onClick={(e) => { e.stopPropagation(); setPreview(null); fileInputRef.current.value = ''; }} className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-[#8D7B68] hover:bg-white shadow-sm"><X size={12} /></button>}
                 </div>
                 <textarea value={text} onChange={e => { setText(e.target.value); setError(''); }} placeholder="记录微小的瞬间..." className="w-full h-20 bg-transparent resize-none text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] focus:outline-none mb-2 leading-loose tracking-wide text-center" />
                 <div className="flex justify-center gap-2 mb-6">
@@ -596,17 +607,19 @@ const AppContent = () => {
     }
   });
 
-  // Robust storage with rollback
-  useEffect(() => {
-    const previousEntries = JSON.parse(localStorage.getItem('momo_entries') || '[]');
+  // Robust storage with explicit error alert
+  const saveToStorage = (newEntries) => {
     try {
-      localStorage.setItem('momo_entries', JSON.stringify(entries));
+      const stringified = JSON.stringify(newEntries);
+      localStorage.setItem('momo_entries', stringified);
+      setEntries(newEntries); // Only update state if storage succeeds
+      return true;
     } catch (e) {
-      console.error("Storage Limit Reached", e);
-      setEntries(previousEntries);
-      // No alert, just silent rollback or UI toast (simulated by logic)
+      console.error("Storage Failed:", e);
+      alert("存储空间不足 (Storage Full)。请尝试删除一些旧日记，或不保存图片。");
+      return false;
     }
-  }, [entries]);
+  };
 
   const [searchTerm, setSearchTerm] = useState(''); 
 
@@ -624,17 +637,23 @@ const AppContent = () => {
   
   const handleSaveEntry = (entryData) => {
     setSearchTerm(''); 
+    let newEntries;
     if (currentEntry) {
-        setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
+        newEntries = entries.map(e => e.id === entryData.id ? entryData : e);
     } else {
-        setEntries(prev => [entryData, ...prev]);
+        newEntries = [entryData, ...entries];
     }
-    setIsModalOpen(false);
+    
+    if (saveToStorage(newEntries)) {
+        setIsModalOpen(false);
+    }
   };
 
   const handleDeleteEntry = (id) => {
-      setEntries(prev => prev.filter(e => e.id !== id));
-      setIsModalOpen(false);
+      const newEntries = entries.filter(e => e.id !== id);
+      if (saveToStorage(newEntries)) {
+          setIsModalOpen(false);
+      }
   };
 
   const handleExportData = () => {
@@ -653,8 +672,10 @@ const AppContent = () => {
           try {
               const importedData = JSON.parse(event.target.result);
               if (Array.isArray(importedData)) {
-                  setEntries(importedData);
-                  setIsSettingsOpen(false);
+                  if (saveToStorage(importedData)) {
+                      setIsSettingsOpen(false);
+                      alert("Restore successful!");
+                  }
               }
           } catch (e) { console.error("Import failed"); }
       };
@@ -662,8 +683,11 @@ const AppContent = () => {
   };
 
   const handleResetData = () => {
-      setEntries([]);
-      setIsSettingsOpen(false);
+      if(window.confirm("Delete ALL memories?")) {
+          if(saveToStorage([])) {
+              setIsSettingsOpen(false);
+          }
+      }
   }
 
   return (
