@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload } from 'lucide-react';
+import { Camera, MapPin, Calendar as CalendarIcon, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload, Image as ImageIcon, Grid } from 'lucide-react';
 
 // --- IndexedDB Helper (The Big Warehouse) ---
 const DB_NAME = 'MomoLogDB';
@@ -62,7 +62,7 @@ const dbHelper = {
   }
 };
 
-// --- Error Boundary Component ---
+// --- Error Boundary ---
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -79,10 +79,7 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#F9F7F2] p-6 text-center z-50">
            <h2 className="text-xl font-bold text-stone-800 mb-4">哎呀，App 晕倒了 😵</h2>
-           <p className="text-sm text-stone-600 mb-6">遇到了一点小问题，刷新一下通常能解决。</p>
-           <button onClick={() => window.location.reload()} className="px-6 py-2 bg-stone-800 text-white rounded-full text-sm shadow-lg">
-             刷新试试
-           </button>
+           <button onClick={() => window.location.reload()} className="px-6 py-2 bg-stone-800 text-white rounded-full text-sm shadow-lg">刷新试试</button>
         </div>
       );
     }
@@ -96,20 +93,13 @@ const apiKey = "";
 const callGemini = async (prompt, imageBase64 = null) => {
   const model = "gemini-2.5-flash-preview-09-2025";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
   let contents = [];
   if (imageBase64) {
     const cleanBase64 = imageBase64.split(',')[1];
-    contents = [{
-      parts: [
-        { text: prompt },
-        { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }
-      ]
-    }];
+    contents = [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }] }];
   } else {
     contents = [{ parts: [{ text: prompt }] }];
   }
-  
   const maxRetries = 3;
   let delay = 1000;
   for (let i = 0; i < maxRetries; i++) {
@@ -126,7 +116,7 @@ const callGemini = async (prompt, imageBase64 = null) => {
   }
 };
 
-// --- Robust Image Compression (Better Quality) ---
+// --- Image Compression ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -136,28 +126,18 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Improved Resolution: 1024px for better detail
         const MAX_DIM = 1024; 
         let width = img.width;
         let height = img.height;
-
         if (width > height) {
-          if (width > MAX_DIM) {
-            height *= MAX_DIM / width;
-            width = MAX_DIM;
-          }
+          if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
         } else {
-          if (height > MAX_DIM) {
-            width *= MAX_DIM / height;
-            height = MAX_DIM;
-          }
+          if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; }
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        // Improved Quality: 0.8 for clearer images
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         resolve(dataUrl);
       };
@@ -167,7 +147,7 @@ const compressImage = (file) => {
   });
 };
 
-// --- Icons ---
+// --- Icons & Moods ---
 const Icons = {
   Bear: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><circle cx="6" cy="6" r="3.5" className="fill-[#D7C4BB]" /><circle cx="18" cy="6" r="3.5" className="fill-[#D7C4BB]" /><circle cx="12" cy="13" r="8.5" className="fill-[#E6D2C9]" /><circle cx="12" cy="14.5" r="2.5" className="fill-[#F5E6E0]" /><circle cx="10" cy="12" r="1" className="fill-[#5C4033]" /><circle cx="14" cy="12" r="1" className="fill-[#5C4033]" /><ellipse cx="12" cy="14" rx="1" ry="0.6" className="fill-[#5C4033]" /><path d="M7 17c1.5 1 3.5 1 5 0" className="stroke-[#E6D2C9] stroke-width-[2]" /></svg>),
   Rabbit: () => (<svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 drop-shadow-sm"><ellipse cx="9" cy="7" rx="2.5" ry="6" className="fill-[#FFF5E6]" /><ellipse cx="15" cy="7" rx="2.5" ry="6" className="fill-[#FFF5E6]" /><path d="M9 7c0 0 0 3 0 0" className="stroke-[#FFD1DC] stroke-width-[2]" strokeLinecap="round" /><path d="M15 7c0 0 0 3 0 0" className="stroke-[#FFD1DC] stroke-width-[2]" strokeLinecap="round" /><circle cx="12" cy="14" r="8" className="fill-[#FFFAF0]" /><circle cx="10" cy="13" r="1" className="fill-[#5C4033]" /><circle cx="14" cy="13" r="1" className="fill-[#5C4033]" /><path d="M11 15l1 1l1-1" className="stroke-[#FFB7B2] stroke-width-[1.5]" strokeLinecap="round" /><circle cx="7" cy="15" r="1.5" className="fill-[#FFB7B2] opacity-50" /><circle cx="17" cy="15" r="1.5" className="fill-[#FFB7B2] opacity-50" /></svg>),
@@ -184,14 +164,14 @@ const Icons = {
 const MOODS = [
   { id: 'happy', icon: Icons.Bear, label: '暖暖熊' },
   { id: 'excited', icon: Icons.Rabbit, label: '元气兔' },
-  { id: 'smart', icon: Icons.Fox, label: '神气狐' },
+  { id: 'smart', icon: Icons.Fox, label: '机智狐' },
   { id: 'lazy', icon: Icons.Cat, label: '懒懒猫' },
-  { id: 'playful', icon: Icons.Dog, label: '快乐狗' },
-  { id: 'sun', icon: Icons.Chick, label: '急急鸡' },
+  { id: 'playful', icon: Icons.Dog, label: '修勾' },
+  { id: 'sun', icon: Icons.Chick, label: '小鸡啄米' },
   { id: 'rain', icon: Icons.Frog, label: '听雨蛙' },
-  { id: 'calm', icon: Icons.Deer, label: '灵气鹿' },
-  { id: 'tired', icon: Icons.Koala, label: '累考拉' },
-  { id: 'sad', icon: Icons.Whale, label: '悲伤鲸' },
+  { id: 'calm', icon: Icons.Deer, label: '森之鹿' },
+  { id: 'tired', icon: Icons.Koala, label: '睡睡考拉' },
+  { id: 'sad', icon: Icons.Whale, label: '深海鲸' },
 ];
 
 const getTodayStr = () => {
@@ -233,14 +213,17 @@ const WeatherWidget = () => (
 const TabBar = ({ currentTab, onTabChange, onAdd }) => (
   <div className="fixed bottom-0 left-0 right-0 pb-6 pt-4 bg-gradient-to-t from-[#F9F7F2] to-transparent z-50 flex justify-center items-center pointer-events-none">
     <div className="bg-white/90 backdrop-blur-md px-8 py-3 rounded-full flex items-center gap-10 shadow-[0_4px_20px_-5px_rgba(141,123,104,0.15)] border border-[#EBE8E0] pointer-events-auto">
+      {/* Home Button now means Calendar/List */}
       <button onClick={() => onTabChange('home')} className={`${currentTab === 'home' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
         <Home size={20} />
       </button>
+      {/* Add Button */}
       <button onClick={onAdd} className="bg-[#8D7B68] text-[#F9F7F2] w-10 h-10 rounded-full flex items-center justify-center shadow-md transform hover:scale-105 transition-all hover:bg-[#786958]">
         <Plus size={20} />
       </button>
-      <button onClick={() => onTabChange('calendar')} className={`${currentTab === 'calendar' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
-        <Calendar size={20} />
+      {/* Gallery Button replaces old Calendar button */}
+      <button onClick={() => onTabChange('gallery')} className={`${currentTab === 'gallery' ? 'text-[#8D7B68]' : 'text-[#C4Bdb5]'} transition-colors`}>
+        <Grid size={20} />
       </button>
     </div>
   </div>
@@ -255,7 +238,7 @@ const PolaroidCard = ({ entry, onClick }) => {
     <div onClick={onClick} className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px] cursor-pointer active:scale-95">
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-6 bg-[#F4F1EA] opacity-90 rotate-1 shadow-sm z-10 border-l border-r border-[#EBE8E0]/50"></div>
       
-      {/* CHANGED: Fixed 1:1 Aspect Ratio (Square) for Home List */}
+      {/* 1:1 Square for List View */}
       <div className="w-full aspect-square overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
         <img src={entry.image} alt="Memory" className="w-full h-full object-cover" />
         <div className="absolute bottom-2 right-2 bg-black/20 backdrop-blur-[1px] px-1.5 py-0.5 rounded-[2px]">
@@ -322,18 +305,37 @@ const NoteCard = ({ entry, onClick }) => {
     );
 };
 
-const PostcardDecoration = () => (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute inset-0 opacity-[0.4]" 
-             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}>
-        </div>
-        <div className="absolute inset-2 border border-[#EBE8E0] rounded-[2px] opacity-50"></div>
-    </div>
-);
+// --- Gallery View (Memory Corridor) ---
+const GalleryView = ({ entries, onEntryClick }) => {
+  const imageEntries = entries.filter(e => e.image);
 
-const CalendarView = ({ entries, onEntryClick }) => { 
+  if (imageEntries.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 opacity-50 gap-2">
+            <ImageIcon size={32} className="text-[#D4Ccc5]" />
+            <p className="text-xs font-serif text-[#A89F91]">Gallery is empty</p>
+        </div>
+      )
+  }
+
+  return (
+    <div className="p-4 pb-32 animate-fade-in">
+        <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-[0.3em] text-sm uppercase">Memory Corridor</h3>
+        <div className="columns-2 gap-3 space-y-3">
+            {imageEntries.map(entry => (
+                <div key={entry.id} onClick={() => onEntryClick(entry)} className="break-inside-avoid mb-3 relative group cursor-pointer">
+                    <img src={entry.image} className="w-full rounded-[2px] shadow-sm border border-[#EBE8E0] grayscale-[0.1] group-hover:grayscale-0 transition-all" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-[2px]"></div>
+                </div>
+            ))}
+        </div>
+    </div>
+  )
+}
+
+// --- Calendar View (New Home) ---
+const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, selectedDate, setSelectedDate, onClearSelection }) => { 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false); 
   const calendarRef = useRef(null);
 
@@ -344,15 +346,6 @@ const CalendarView = ({ entries, onEntryClick }) => {
   
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-
-  const getSelectedDateStr = () => {
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const selectedEntries = entries.filter(e => e && e.date === getSelectedDateStr());
 
   const loadHtml2Canvas = () => {
     return new Promise((resolve, reject) => {
@@ -385,11 +378,62 @@ const CalendarView = ({ entries, onEntryClick }) => {
       }
   };
 
+  // Filter Logic
+  const getSelectedDateStr = () => {
+    if (!selectedDate) return null;
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const selectedStr = getSelectedDateStr();
+
+  const displayEntries = entries.filter(entry => {
+      // 1. Date Filter (if selected)
+      if (selectedStr && entry.date !== selectedStr) return false;
+      
+      // 2. Search Filter (if text exists)
+      if (searchTerm) {
+          const term = searchTerm.toLowerCase();
+          const matchesTag = entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tag.toLowerCase().includes(term));
+          const matchesText = (entry.text || '').toLowerCase().includes(term);
+          const matchesLocation = (entry.location || '').toLowerCase().includes(term);
+          if (!matchesTag && !matchesText && !matchesLocation) return false;
+      }
+      return true;
+  });
+
+  const handleDayClick = (day) => {
+      if (isExporting) return;
+      const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      
+      // If clicking the same day, deselect it (show all)
+      if (selectedDate && 
+          newDate.getDate() === selectedDate.getDate() && 
+          newDate.getMonth() === selectedDate.getMonth() && 
+          newDate.getFullYear() === selectedDate.getFullYear()) {
+          onClearSelection();
+      } else {
+          setSelectedDate(newDate);
+      }
+  }
+
   return (
     <div className="animate-fade-in flex flex-col w-full h-full">
-      <div ref={calendarRef} className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}>
-        {isExporting && <PostcardDecoration />}
-        <div className={`flex justify-between items-center mb-6 pt-2 relative z-10 ${isExporting ? 'px-0 justify-center mb-4' : 'px-4'}`}>
+      <div 
+        ref={calendarRef} 
+        className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}
+      >
+        {isExporting && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}></div>
+                <div className="absolute inset-2 border border-[#EBE8E0] rounded-[2px] opacity-50"></div>
+                <div className="absolute bottom-2 right-4"><span className="font-serif italic text-[#C4Bdb5] text-[10px] tracking-widest">captured by momo</span></div>
+            </div>
+        )}
+
+        <div className={`flex justify-between items-center mb-4 pt-2 relative z-10 ${isExporting ? 'px-0 justify-center mb-4' : 'px-4'}`}>
             {!isExporting && <button onClick={prevMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronLeft size={18}/></button>}
             <div className="text-center relative">
                 <h2 className={`font-serif text-[#6B5D52] tracking-widest ${isExporting ? 'text-2xl mb-1' : 'text-xl'}`}>
@@ -406,6 +450,22 @@ const CalendarView = ({ entries, onEntryClick }) => {
             {!isExporting && <button onClick={nextMonth} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><ChevronRight size={18}/></button>}
         </div>
 
+        {!isExporting && (
+            <div className="px-4 mb-4 relative group">
+                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                    <Search size={12} className="text-[#C4Bdb5]" />
+                </div>
+                <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2 pl-8 pr-4 text-[10px] text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] font-serif tracking-wide"
+                />
+                {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-6 flex items-center text-[#D4Ccc5]"><X size={10} /></button>}
+            </div>
+        )}
+
         <div className={`grid grid-cols-7 relative z-10 ${isExporting ? 'gap-1.5 px-1' : 'gap-2 px-2 mb-2'}`}>
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className={`text-center font-serif mb-1 text-[#A89F91] ${isExporting ? 'text-[10px] font-bold' : 'text-[10px]'}`}>{d}</div>)}
             {blanks.map(i => <div key={`blank-${i}`} />)}
@@ -416,10 +476,10 @@ const CalendarView = ({ entries, onEntryClick }) => {
             const dateStr = `${year}-${month}-${dayStr}`;
             
             const entry = entries.find(e => e && e.date === dateStr);
-            const isSelected = !isExporting && selectedDate.getDate() === day && selectedDate.getMonth() === currentDate.getMonth() && selectedDate.getFullYear() === currentDate.getFullYear();
+            const isSelected = !isExporting && selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentDate.getMonth() && selectedDate.getFullYear() === currentDate.getFullYear();
             
             return (
-                <div key={day} onClick={() => !isExporting && setSelectedDate(new Date(year, parseInt(month)-1, day))} className="aspect-square relative flex items-center justify-center group cursor-pointer">
+                <div key={day} onClick={() => handleDayClick(day)} className="aspect-square relative flex items-center justify-center group cursor-pointer">
                     {entry ? (
                         <div className={`w-full h-full p-[3px] bg-white border border-[#EBE8E0] shadow-sm transform ${isSelected ? 'scale-105 rotate-0 z-10 ring-1 ring-[#8D7B68]' : 'rotate-[-2deg]'} ${!isExporting && 'group-hover:rotate-0'} transition-all duration-300 relative`}>
                             {entry.image ? (
@@ -428,7 +488,6 @@ const CalendarView = ({ entries, onEntryClick }) => {
                                 <div className="w-full h-full bg-[#FFFDF5] flex items-center justify-center flex-col gap-1 p-1">
                                     <div className="w-full h-[1px] bg-[#EBE8E0]"></div>
                                     <div className="w-full h-[1px] bg-[#EBE8E0]"></div>
-                                    <div className="w-2/3 h-[1px] bg-[#EBE8E0] self-start"></div>
                                 </div>
                             )}
                             {isSelected && <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#8D7B68] rounded-full"></div>}
@@ -442,13 +501,21 @@ const CalendarView = ({ entries, onEntryClick }) => {
         </div>
       </div>
 
-      <div className="bg-[#FDFBF7] border-t border-[#F4F1EA] p-4 min-h-[200px]">
-          <h3 className="text-[10px] text-[#A89F91] font-serif tracking-[0.2em] mb-4 text-center uppercase">
-            {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-          </h3>
-          {selectedEntries.length > 0 ? (
+      <div className="bg-[#FDFBF7] border-t border-[#F4F1EA] p-4 min-h-[200px] pb-32">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-[10px] text-[#A89F91] font-serif tracking-[0.2em] text-center uppercase">
+                {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'ALL MEMORIES'}
+            </h3>
+            {selectedDate && (
+                <button onClick={onClearSelection} className="text-[9px] text-[#D4Ccc5] hover:text-[#8D7B68] border border-[#EBE8E0] px-2 py-0.5 rounded-full">
+                    Show All
+                </button>
+            )}
+          </div>
+          
+          {displayEntries.length > 0 ? (
               <div className="space-y-4 animate-slide-up">
-                  {selectedEntries.map(entry => (
+                  {displayEntries.map(entry => (
                       entry.image ? 
                           <PolaroidCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} /> : 
                           <NoteCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} />
@@ -457,7 +524,7 @@ const CalendarView = ({ entries, onEntryClick }) => {
           ) : (
               <div className="flex flex-col items-center justify-center h-32 text-[#D4Ccc5] gap-2">
                   <StickyNote size={20} className="opacity-50" />
-                  <span className="text-[10px] font-serif italic">No memories yet</span>
+                  <span className="text-[10px] font-serif italic">No memories found</span>
               </div>
           )}
       </div>
@@ -465,10 +532,10 @@ const CalendarView = ({ entries, onEntryClick }) => {
   );
 };
 
-const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
+const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) => {
   const [text, setText] = useState('');
   const [location, setLocation] = useState(''); 
-  const [date, setDate] = useState(getTodayStr());
+  const [date, setDate] = useState(initialDate || getTodayStr()); // Use initialDate prop
   const [mood, setMood] = useState(MOODS[0].id);
   const [preview, setPreview] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -482,8 +549,10 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
       setDate(initialEntry.date || getTodayStr());
       setMood(initialEntry.mood || MOODS[0].id);
       setPreview(initialEntry.image || null);
+    } else if (initialDate) {
+        setDate(initialDate);
     }
-  }, [initialEntry]);
+  }, [initialEntry, initialDate]);
 
   const handleAiHelp = async () => {
     setIsAiLoading(true);
@@ -555,7 +624,6 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
             <div className="overflow-y-auto no-scrollbar flex-1">
                 <div onClick={() => fileInputRef.current.click()} className="w-full flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
                     {preview ? (
-                        // Full image display without cropping (Adaptive in Modal)
                         <div className="w-full relative">
                             <img src={preview} className="w-full h-auto max-h-[60vh] object-contain rounded-[2px] shadow-sm" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 hover:opacity-100 transition-opacity">
@@ -649,10 +717,11 @@ const AppContent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); 
   const [currentEntry, setCurrentEntry] = useState(null);
-  const [entries, setEntries] = useState([]); // Initialize empty
-  const [searchTerm, setSearchTerm] = useState(''); 
+  const [entries, setEntries] = useState([]); 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null); // Lifted state: Default to NULL (All)
 
-  // Migration Effect: LocalStorage -> IndexedDB
+  // Migration & Load
   useEffect(() => {
     const migrateData = async () => {
       const localData = localStorage.getItem('momo_entries');
@@ -660,43 +729,31 @@ const AppContent = () => {
         try {
           const parsed = JSON.parse(localData);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            for (const entry of parsed) {
-              await dbHelper.put(entry);
-            }
+            for (const entry of parsed) await dbHelper.put(entry);
             localStorage.setItem('momo_entries_backup', localData); 
             localStorage.removeItem('momo_entries');
           }
-        } catch (e) {
-          console.error("Migration failed", e);
-        }
+        } catch (e) { console.error("Migration failed", e); }
       }
-      
-      // Load all data
       const allDocs = await dbHelper.getAll();
-      const sorted = allDocs.sort((a, b) => b.id - a.id); // Sort desc
+      const sorted = allDocs.sort((a, b) => b.id - a.id); 
       setEntries(sorted);
     };
-    
     migrateData();
   }, []);
 
-  const filteredEntries = entries.filter(entry => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    const matchesTag = entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tag.toLowerCase().includes(term));
-    const matchesText = (entry.text || '').toLowerCase().includes(term);
-    const matchesLocation = (entry.location || '').toLowerCase().includes(term);
-    return matchesTag || matchesText || matchesLocation;
-  });
-
-  const openNewEntryModal = () => { setCurrentEntry(null); setIsModalOpen(true); };
+  const openNewEntryModal = () => { 
+      // If a date is selected in calendar, use that. Otherwise today.
+      setCurrentEntry(null); 
+      setIsModalOpen(true); 
+  };
+  
   const openEditEntryModal = (entry) => { setCurrentEntry(entry); setIsModalOpen(true); };
   
   const handleSaveEntry = async (entryData) => {
     setSearchTerm(''); 
     try {
-        await dbHelper.put(entryData); // Save to DB first
-        // Then update UI state
+        await dbHelper.put(entryData); 
         if (currentEntry) {
             setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
         } else {
@@ -711,12 +768,10 @@ const AppContent = () => {
 
   const handleDeleteEntry = async (id) => {
       try {
-          await dbHelper.delete(id); // Delete from DB
+          await dbHelper.delete(id); 
           setEntries(prev => prev.filter(e => e.id !== id));
           setIsModalOpen(false);
-      } catch (e) {
-          console.error("DB Delete Failed", e);
-      }
+      } catch (e) { console.error("DB Delete Failed", e); }
   };
 
   const handleExportData = async () => {
@@ -738,10 +793,8 @@ const AppContent = () => {
               if (Array.isArray(importedData)) {
                   if(window.confirm(`Found ${importedData.length} memories. Replace current data?`)) {
                       await dbHelper.clear();
-                      for (const entry of importedData) {
-                          await dbHelper.put(entry);
-                      }
-                      setEntries(importedData); // Update UI
+                      for (const entry of importedData) await dbHelper.put(entry);
+                      setEntries(importedData); 
                       setIsSettingsOpen(false);
                       alert("Restore successful!");
                   }
@@ -759,10 +812,19 @@ const AppContent = () => {
       }
   }
 
+  // Prepare default date string for Modal (YYYY-MM-DD)
+  const getSelectedDateForModal = () => {
+      if (selectedDate) {
+          const year = selectedDate.getFullYear();
+          const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+          const day = String(selectedDate.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+      }
+      return undefined; // Will default to Today inside modal
+  }
+
   return (
     <div className="fixed inset-0 w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
-      <GrainOverlay isExporting={false} />
-      
       <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
         
         <div className="pt-12 pb-4 px-6 flex justify-between items-end sticky top-0 z-40 bg-[#F9F7F2]/80 backdrop-blur-sm transition-all shrink-0">
@@ -779,45 +841,39 @@ const AppContent = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0">
-           {tab === 'home' ? (
-             <div className="animate-fade-in pt-2 px-4">
-                <div className="mb-6 mt-2 relative group">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <Search size={14} className="text-[#C4Bdb5] group-focus-within:text-[#8D7B68] transition-colors" />
-                    </div>
-                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search memories..." className="w-full bg-[#FFFDF5] border border-[#EBE8E0] rounded-full py-2.5 pl-10 pr-4 text-xs text-[#6B5D52] placeholder-[#D4Ccc5] focus:outline-none focus:border-[#D7C4BB] focus:bg-white font-serif tracking-wide transition-all shadow-[0_2px_10px_-4px_rgba(141,123,104,0.05)]" />
-                    {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-3 flex items-center text-[#D4Ccc5] hover:text-[#8D7B68]"><X size={12} /></button>}
-                </div>
-                {filteredEntries.length > 0 ? (
-                    filteredEntries.map(e => (
-                        e.image ? <PolaroidCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} /> : <NoteCard key={e.id} entry={e} onClick={() => openEditEntryModal(e)} />
-                    ))
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-12 opacity-50 gap-2">
-                        <Search size={24} className="text-[#D4Ccc5]" />
-                        <p className="text-[10px] font-serif text-[#A89F91] tracking-widest">No moments found</p>
-                    </div>
-                )}
-             </div>
-           ) : (
-             <CalendarView entries={entries} onEntryClick={openEditEntryModal} />
+           {tab === 'home' && (
+             <CalendarView 
+                entries={entries} 
+                onEntryClick={openEditEntryModal}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                onClearSelection={() => setSelectedDate(null)}
+             />
+           )}
+           {tab === 'gallery' && (
+             <GalleryView entries={entries} onEntryClick={openEditEntryModal} />
            )}
         </div>
 
         <TabBar currentTab={tab} onTabChange={setTab} onAdd={openNewEntryModal} />
         
-        {isModalOpen && <EntryModal onClose={() => setIsModalOpen(false)} onSave={handleSaveEntry} onDelete={handleDeleteEntry} initialEntry={currentEntry} />}
+        {isModalOpen && (
+            <EntryModal 
+                onClose={() => setIsModalOpen(false)} 
+                onSave={handleSaveEntry} 
+                onDelete={handleDeleteEntry} 
+                initialEntry={currentEntry} 
+                initialDate={getSelectedDateForModal()} // Pass selected date
+            />
+        )}
         {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} onExport={handleExportData} onImport={handleImportData} onReset={handleResetData} />}
       </div>
-
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@300;400;700&display=swap');
         .font-serif { font-family: 'Playfair Display', 'Noto Serif SC', serif; }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
       `}</style>
     </div>
   );
