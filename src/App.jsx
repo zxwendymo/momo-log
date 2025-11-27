@@ -1,6 +1,68 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, MapPin, Calendar, Home, Plus, X, Sparkles, Loader2, Heart, ChevronLeft, ChevronRight, CloudSun, StickyNote, Quote, Download, Search, Trash2, Settings, Upload } from 'lucide-react';
 
+// --- IndexedDB Helper (The Big Warehouse) ---
+// 这是一个浏览器内置的数据库，容量极大，专门用来存图片
+const DB_NAME = 'MomoLogDB';
+const STORE_NAME = 'entries';
+const DB_VERSION = 1;
+
+const dbHelper = {
+  open: () => {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+    });
+  },
+  getAll: async () => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  put: async (entry) => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(entry);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  delete: async (id) => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  },
+  clear: async () => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+};
+
 // --- Error Boundary Component (Safety Airbag) ---
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -18,18 +80,10 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#F9F7F2] p-6 text-center z-50">
            <h2 className="text-xl font-bold text-stone-800 mb-4">哎呀，App 晕倒了 😵</h2>
-           <p className="text-sm text-stone-600 mb-6">可能是图片太大了，或者数据出了点小问题。</p>
-           <div className="bg-white p-4 rounded-lg border border-red-100 mb-6 w-full overflow-auto max-h-32">
-             <p className="text-xs text-red-400 font-mono break-all">{this.state.error?.message}</p>
-           </div>
-           <div className="flex gap-4">
-             <button onClick={() => window.location.reload()} className="px-6 py-2 bg-stone-800 text-white rounded-full text-sm shadow-lg">
-               刷新试试
-             </button>
-             <button onClick={() => { localStorage.removeItem('momo_entries'); window.location.reload(); }} className="px-6 py-2 bg-white border border-red-200 text-red-400 rounded-full text-sm">
-               清空重置
-             </button>
-           </div>
+           <p className="text-sm text-stone-600 mb-6">遇到了一点小问题，刷新一下通常能解决。</p>
+           <button onClick={() => window.location.reload()} className="px-6 py-2 bg-stone-800 text-white rounded-full text-sm shadow-lg">
+             刷新试试
+           </button>
         </div>
       );
     }
@@ -73,7 +127,7 @@ const callGemini = async (prompt, imageBase64 = null) => {
   }
 };
 
-// --- Robust Image Compression (Better Quality) ---
+// --- Robust Image Compression (Still needed for performance) ---
 const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -83,8 +137,7 @@ const compressImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Improved Resolution: 1024px for better detail
-        const MAX_DIM = 1024; 
+        const MAX_DIM = 1024; // Can be larger now with IndexedDB
         let width = img.width;
         let height = img.height;
 
@@ -104,8 +157,7 @@ const compressImage = (file) => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        // Improved Quality: 0.8 for clearer images
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // Better quality
         resolve(dataUrl);
       };
       img.onerror = (e) => reject(e);
@@ -161,7 +213,17 @@ const formatDateSafe = (dateString, options) => {
     }
 };
 
-const MOCK_ENTRIES = [];
+const MOCK_ENTRIES = [
+  {
+    id: '1',
+    date: getTodayStr(), 
+    image: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&q=80&w=600',
+    location: 'Cinque Terre',
+    mood: 'happy',
+    tags: ['#看海', '#治愈'],
+    text: '海风吹过的时候，时间好像变慢了。喜欢这种淡淡的蓝色。🌊',
+  },
+];
 
 // --- Components ---
 const GrainOverlay = ({ isExporting }) => (
@@ -202,8 +264,9 @@ const PolaroidCard = ({ entry, onClick }) => {
     <div onClick={onClick} className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px] cursor-pointer active:scale-95">
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-6 bg-[#F4F1EA] opacity-90 rotate-1 shadow-sm z-10 border-l border-r border-[#EBE8E0]/50"></div>
       
-      <div className="aspect-[4/3] w-full overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
-        <img src={entry.image} alt="Memory" className="w-full h-full object-cover" />
+      <div className="w-full overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
+         {/* Optimized display: auto height for full image visibility */}
+        <img src={entry.image} alt="Memory" className="w-full h-auto object-contain" />
         <div className="absolute bottom-2 right-2 bg-black/20 backdrop-blur-[1px] px-1.5 py-0.5 rounded-[2px]">
             <span className="text-white/95 text-[9px] font-serif tracking-widest">
                 {formatDateSafe(entry.date, { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
@@ -589,39 +652,26 @@ const SettingsModal = ({ onClose, onImport, onExport, onReset }) => {
     )
 }
 
-// --- Main App Component Wrapped with ErrorBoundary ---
+// --- App Content using IndexedDB ---
 const AppContent = () => {
   const [tab, setTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); 
   const [currentEntry, setCurrentEntry] = useState(null);
-  
-  const [entries, setEntries] = useState(() => {
-    try {
-        const saved = localStorage.getItem('momo_entries');
-        const parsed = saved ? JSON.parse(saved) : MOCK_ENTRIES;
-        if (!Array.isArray(parsed)) return MOCK_ENTRIES;
-        return parsed.filter(e => e && typeof e === 'object');
-    } catch (e) {
-        return MOCK_ENTRIES;
-    }
-  });
-
-  // Robust storage with explicit error alert
-  const saveToStorage = (newEntries) => {
-    try {
-      const stringified = JSON.stringify(newEntries);
-      localStorage.setItem('momo_entries', stringified);
-      setEntries(newEntries); // Only update state if storage succeeds
-      return true;
-    } catch (e) {
-      console.error("Storage Failed:", e);
-      alert("存储空间不足 (Storage Full)。请尝试删除一些旧日记，或不保存图片。");
-      return false;
-    }
-  };
-
+  const [entries, setEntries] = useState([]); // Initialize empty
   const [searchTerm, setSearchTerm] = useState(''); 
+
+  // Load entries from IndexedDB on mount
+  useEffect(() => {
+    dbHelper.getAll().then(loadedEntries => {
+        // If DB is empty, use MOCK_ENTRIES as initial data if desired, or just empty
+        // For now, if completely empty, maybe we keep it empty or load defaults
+        // Let's just use what's in DB. If empty, it's empty.
+        // Sort by ID descending (newest first usually) or Date
+        const sorted = loadedEntries.sort((a, b) => b.id - a.id);
+        setEntries(sorted);
+    }).catch(err => console.error("Failed to load DB", err));
+  }, []);
 
   const filteredEntries = entries.filter(entry => {
     if (!searchTerm) return true;
@@ -635,29 +685,36 @@ const AppContent = () => {
   const openNewEntryModal = () => { setCurrentEntry(null); setIsModalOpen(true); };
   const openEditEntryModal = (entry) => { setCurrentEntry(entry); setIsModalOpen(true); };
   
-  const handleSaveEntry = (entryData) => {
+  const handleSaveEntry = async (entryData) => {
     setSearchTerm(''); 
-    let newEntries;
-    if (currentEntry) {
-        newEntries = entries.map(e => e.id === entryData.id ? entryData : e);
-    } else {
-        newEntries = [entryData, ...entries];
-    }
-    
-    if (saveToStorage(newEntries)) {
+    try {
+        await dbHelper.put(entryData); // Save to DB first
+        // Then update UI state
+        if (currentEntry) {
+            setEntries(prev => prev.map(e => e.id === entryData.id ? entryData : e));
+        } else {
+            setEntries(prev => [entryData, ...prev]);
+        }
         setIsModalOpen(false);
+    } catch (e) {
+        console.error("DB Save Failed", e);
+        alert("保存失败，可能是存储空间问题");
     }
   };
 
-  const handleDeleteEntry = (id) => {
-      const newEntries = entries.filter(e => e.id !== id);
-      if (saveToStorage(newEntries)) {
+  const handleDeleteEntry = async (id) => {
+      try {
+          await dbHelper.delete(id); // Delete from DB
+          setEntries(prev => prev.filter(e => e.id !== id));
           setIsModalOpen(false);
+      } catch (e) {
+          console.error("DB Delete Failed", e);
       }
   };
 
-  const handleExportData = () => {
-      const dataStr = JSON.stringify(entries);
+  const handleExportData = async () => {
+      const allData = await dbHelper.getAll();
+      const dataStr = JSON.stringify(allData);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
       const exportFileDefaultName = `momo-backup-${new Date().toISOString().slice(0,10)}.json`;
       const linkElement = document.createElement('a');
@@ -668,25 +725,30 @@ const AppContent = () => {
 
   const handleImportData = (file) => {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
           try {
               const importedData = JSON.parse(event.target.result);
               if (Array.isArray(importedData)) {
-                  if (saveToStorage(importedData)) {
+                  if(window.confirm(`Found ${importedData.length} memories. Replace current data?`)) {
+                      await dbHelper.clear();
+                      for (const entry of importedData) {
+                          await dbHelper.put(entry);
+                      }
+                      setEntries(importedData); // Update UI
                       setIsSettingsOpen(false);
                       alert("Restore successful!");
                   }
               }
-          } catch (e) { console.error("Import failed"); }
+          } catch (e) { console.error("Import failed", e); }
       };
       reader.readAsText(file);
   };
 
-  const handleResetData = () => {
+  const handleResetData = async () => {
       if(window.confirm("Delete ALL memories?")) {
-          if(saveToStorage([])) {
-              setIsSettingsOpen(false);
-          }
+          await dbHelper.clear();
+          setEntries([]);
+          setIsSettingsOpen(false);
       }
   }
 
