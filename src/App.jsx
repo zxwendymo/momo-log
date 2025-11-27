@@ -419,7 +419,7 @@ const CalendarView = ({ entries }) => {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col w-full h-full">
+    <div className="animate-fade-in flex flex-col w-full">
       {/* Calendar Content to Capture 
          Optimized Layout for Export Mode: Less padding, smaller gap, larger grid
       */}
@@ -653,6 +653,19 @@ export default function App() {
   const [entries, setEntries] = useState(MOCK_ENTRIES);
   const [searchTerm, setSearchTerm] = useState(''); // 新增搜索状态
 
+  // Dynamic Viewport Height Hook
+  useEffect(() => {
+    const setAppHeight = () => {
+      const doc = document.documentElement;
+      doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+    };
+    // Call on init and resize
+    window.addEventListener('resize', setAppHeight);
+    setAppHeight();
+    
+    return () => window.removeEventListener('resize', setAppHeight);
+  }, []);
+
   // 筛选逻辑：根据标签、内容或地点进行搜索
   const filteredEntries = entries.filter(entry => {
     if (!searchTerm) return true;
@@ -669,9 +682,11 @@ export default function App() {
   });
 
   return (
-    // Updated Root Container: fixed inset-0 forces the container to match viewport perfectly
-    // This is critical for mobile PWA/browser compatibility
-    <div className="fixed inset-0 w-full h-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
+    // Updated Root Container: Use inline style for dynamic height
+    <div 
+        className="fixed inset-0 w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white"
+        style={{ height: 'var(--app-height, 100vh)' }} // Fallback to 100vh
+    >
       <GrainOverlay isExporting={false} />
       
       <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
@@ -685,8 +700,8 @@ export default function App() {
            <WeatherWidget />
         </div>
 
-        {/* Content - added min-h-0 and touch scrolling support */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* Content - Explicit touch action and padding */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
            {tab === 'home' ? (
              <div className="animate-fade-in pt-2 px-4">
                 {/* --- 新增搜索栏开始 --- */}
