@@ -184,14 +184,14 @@ const Icons = {
 const MOODS = [
   { id: 'happy', icon: Icons.Bear, label: '暖暖熊' },
   { id: 'excited', icon: Icons.Rabbit, label: '元气兔' },
-  { id: 'smart', icon: Icons.Fox, label: '机智狐' },
+  { id: 'smart', icon: Icons.Fox, label: '神气狐' },
   { id: 'lazy', icon: Icons.Cat, label: '懒懒猫' },
-  { id: 'playful', icon: Icons.Dog, label: '修勾' },
-  { id: 'sun', icon: Icons.Chick, label: '小鸡啄米' },
+  { id: 'playful', icon: Icons.Dog, label: '快乐狗' },
+  { id: 'sun', icon: Icons.Chick, label: '急急鸡' },
   { id: 'rain', icon: Icons.Frog, label: '听雨蛙' },
-  { id: 'calm', icon: Icons.Deer, label: '森之鹿' },
-  { id: 'tired', icon: Icons.Koala, label: '睡睡考拉' },
-  { id: 'sad', icon: Icons.Whale, label: '深海鲸' },
+  { id: 'calm', icon: Icons.Deer, label: '灵气鹿' },
+  { id: 'tired', icon: Icons.Koala, label: '累考拉' },
+  { id: 'sad', icon: Icons.Whale, label: '悲伤鲸' },
 ];
 
 const getTodayStr = () => {
