@@ -214,17 +214,7 @@ const formatDateSafe = (dateString, options) => {
     }
 };
 
-const MOCK_ENTRIES = [
-  {
-    id: '1',
-    date: getTodayStr(), 
-    image: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&q=80&w=600',
-    location: 'Cinque Terre',
-    mood: 'happy',
-    tags: ['#看海', '#治愈'],
-    text: '海风吹过的时候，时间好像变慢了。喜欢这种淡淡的蓝色。🌊',
-  },
-];
+const MOCK_ENTRIES = [];
 
 // --- Components ---
 const GrainOverlay = ({ isExporting }) => (
@@ -265,9 +255,9 @@ const PolaroidCard = ({ entry, onClick }) => {
     <div onClick={onClick} className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px] cursor-pointer active:scale-95">
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-6 bg-[#F4F1EA] opacity-90 rotate-1 shadow-sm z-10 border-l border-r border-[#EBE8E0]/50"></div>
       
-      <div className="w-full overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
-         {/* Optimized display: auto height for full image visibility */}
-        <img src={entry.image} alt="Memory" className="w-full h-auto object-contain" />
+      {/* CHANGED: Fixed 1:1 Aspect Ratio (Square) for Home List */}
+      <div className="w-full aspect-square overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
+        <img src={entry.image} alt="Memory" className="w-full h-full object-cover" />
         <div className="absolute bottom-2 right-2 bg-black/20 backdrop-blur-[1px] px-1.5 py-0.5 rounded-[2px]">
             <span className="text-white/95 text-[9px] font-serif tracking-widest">
                 {formatDateSafe(entry.date, { month: '2-digit', day: '2-digit', year: '2-digit' }).replace(/\//g, '.')}
@@ -565,7 +555,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
             <div className="overflow-y-auto no-scrollbar flex-1">
                 <div onClick={() => fileInputRef.current.click()} className="w-full flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
                     {preview ? (
-                        // Full image display without cropping
+                        // Full image display without cropping (Adaptive in Modal)
                         <div className="w-full relative">
                             <img src={preview} className="w-full h-auto max-h-[60vh] object-contain rounded-[2px] shadow-sm" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 hover:opacity-100 transition-opacity">
@@ -670,21 +660,18 @@ const AppContent = () => {
         try {
           const parsed = JSON.parse(localData);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            // console.log("Migrating data...", parsed);
             for (const entry of parsed) {
               await dbHelper.put(entry);
             }
-            // Rename key to avoid re-migration next time
             localStorage.setItem('momo_entries_backup', localData); 
             localStorage.removeItem('momo_entries');
-            // alert("Data migrated from LocalStorage to IndexedDB!"); 
           }
         } catch (e) {
           console.error("Migration failed", e);
         }
       }
       
-      // Load all data (including just migrated)
+      // Load all data
       const allDocs = await dbHelper.getAll();
       const sorted = allDocs.sort((a, b) => b.id - a.id); // Sort desc
       setEntries(sorted);
