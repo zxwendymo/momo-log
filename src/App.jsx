@@ -419,7 +419,7 @@ const CalendarView = ({ entries }) => {
   };
 
   return (
-    <div className="animate-fade-in flex flex-col">
+    <div className="animate-fade-in flex flex-col w-full h-full">
       {/* Calendar Content to Capture 
          Optimized Layout for Export Mode: Less padding, smaller gap, larger grid
       */}
@@ -669,14 +669,15 @@ export default function App() {
   });
 
   return (
-    // Updated Root Container: relative h-[100dvh] for mobile scrolling fix
-    <div className="relative h-[100dvh] w-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
+    // Updated Root Container: fixed inset-0 forces the container to match viewport perfectly
+    // This is critical for mobile PWA/browser compatibility
+    <div className="fixed inset-0 w-full h-full bg-[#F9F7F2] font-sans flex justify-center overflow-hidden text-[#6B5D52] selection:bg-[#E6C9BB] selection:text-white">
       <GrainOverlay isExporting={false} />
       
       <div className="w-full h-full sm:max-w-[390px] sm:h-[85vh] sm:rounded-[4px] relative shadow-2xl flex flex-col overflow-hidden sm:border sm:border-[#EBE8E0]">
         
         {/* Header */}
-        <div className="pt-12 pb-4 px-6 flex justify-between items-end sticky top-0 z-40 bg-[#F9F7F2]/80 backdrop-blur-sm transition-all">
+        <div className="pt-12 pb-4 px-6 flex justify-between items-end sticky top-0 z-40 bg-[#F9F7F2]/80 backdrop-blur-sm transition-all shrink-0">
            <div className="flex flex-col">
                <span className="text-2xl font-serif text-[#5C4033] tracking-widest italic">momo.</span>
                <span className="text-[9px] text-[#A89F91] tracking-[0.4em] uppercase mt-1 ml-1">Daily Log</span>
@@ -684,8 +685,8 @@ export default function App() {
            <WeatherWidget />
         </div>
 
-        {/* Content - added touch scrolling support */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* Content - added min-h-0 and touch scrolling support */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
            {tab === 'home' ? (
              <div className="animate-fade-in pt-2 px-4">
                 {/* --- 新增搜索栏开始 --- */}
