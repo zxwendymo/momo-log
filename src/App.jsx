@@ -678,7 +678,18 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState(null); // Track entry being edited
-  const [entries, setEntries] = useState(MOCK_ENTRIES);
+  
+  // Load from local storage or use mock data
+  const [entries, setEntries] = useState(() => {
+    const saved = localStorage.getItem('momo_entries');
+    return saved ? JSON.parse(saved) : MOCK_ENTRIES;
+  });
+
+  // Save to local storage whenever entries change
+  useEffect(() => {
+    localStorage.setItem('momo_entries', JSON.stringify(entries));
+  }, [entries]);
+
   const [searchTerm, setSearchTerm] = useState(''); 
 
   // Dynamic Viewport Height Hook
