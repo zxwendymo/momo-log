@@ -666,7 +666,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
                 <button onClick={onClose} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
             </div>
             <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-widest text-sm mt-2">
-                {initialEntry ? 'E D I T &nbsp; L O G' : 'N E W &nbsp; L O G'}
+                {initialEntry ? 'E D I T   L O G' : 'N E W   L O G'}
             </h3>
             <div className="overflow-y-auto no-scrollbar flex-1">
                 <div onClick={() => fileInputRef.current.click()} className="w-full flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
