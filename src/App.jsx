@@ -37,6 +37,47 @@ const callGemini = async (prompt, imageBase64 = null) => {
   }
 };
 
+// --- Robust Image Compression ---
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // Limit resolution to 600px to ensure it fits in localStorage
+        const MAX_DIM = 600; 
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        // Aggressive compression: 0.6 quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        resolve(dataUrl);
+      };
+      img.onerror = (e) => reject(e);
+    };
+    reader.onerror = (e) => reject(e);
+  });
+};
+
 // --- Icons ---
 const Icons = {
   Bear: () => (
@@ -160,9 +201,17 @@ const MOODS = [
   { id: 'sad', icon: Icons.Whale, label: '深海鲸' },
 ];
 
-// --- Helpers ---
 const getTodayStr = () => {
     const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const getPastDateStr = (daysAgo) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -172,7 +221,6 @@ const getTodayStr = () => {
 const formatDateSafe = (dateString, options) => {
     try {
         if (!dateString) return 'Unknown Date';
-        // Replace - with / to fix browser compatibility issues with date parsing
         const safeDateString = String(dateString).replace(/-/g, '/');
         const date = new Date(safeDateString);
         if (isNaN(date.getTime())) return 'Invalid Date';
@@ -195,7 +243,6 @@ const MOCK_ENTRIES = [
 ];
 
 // --- Components ---
-
 const GrainOverlay = ({ isExporting }) => (
   <div className={`pointer-events-none fixed inset-0 z-[100] mix-blend-multiply ${isExporting ? 'opacity-0' : 'opacity-[0.06]'}`}
        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
@@ -226,15 +273,12 @@ const TabBar = ({ currentTab, onTabChange, onAdd }) => (
 );
 
 const PolaroidCard = ({ entry, onClick }) => {
-  if (!entry) return null; // Safety Check
+  if (!entry) return null;
   const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
   const MoodIcon = moodObj.icon;
   
   return (
-    <div 
-        onClick={onClick}
-        className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px] cursor-pointer active:scale-95"
-    >
+    <div onClick={onClick} className="mb-8 mx-2 bg-white p-3 pb-6 shadow-[0_2px_15px_-4px_rgba(141,123,104,0.1)] rotate-[-1deg] hover:rotate-0 transition-transform duration-300 ease-out border border-[#EBE8E0] rounded-[2px] cursor-pointer active:scale-95">
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-24 h-6 bg-[#F4F1EA] opacity-90 rotate-1 shadow-sm z-10 border-l border-r border-[#EBE8E0]/50"></div>
       
       <div className="aspect-[4/3] w-full overflow-hidden bg-[#F4F4F4] mb-4 relative grayscale-[0.05] contrast-[0.98]">
@@ -273,15 +317,12 @@ const PolaroidCard = ({ entry, onClick }) => {
 };
 
 const NoteCard = ({ entry, onClick }) => {
-    if (!entry) return null; // Safety Check
+    if (!entry) return null;
     const moodObj = MOODS.find(m => m.id === entry.mood) || MOODS[0];
     const MoodIcon = moodObj.icon;
 
     return (
-        <div 
-            onClick={onClick}
-            className="mb-6 mx-4 bg-[#FFFDF5] p-5 shadow-[0_2px_8px_-2px_rgba(141,123,104,0.1)] border border-[#EBE8E0] relative rounded-[1px] group cursor-pointer active:scale-95 transition-transform"
-        >
+        <div onClick={onClick} className="mb-6 mx-4 bg-[#FFFDF5] p-5 shadow-[0_2px_8px_-2px_rgba(141,123,104,0.1)] border border-[#EBE8E0] relative rounded-[1px] group cursor-pointer active:scale-95 transition-transform">
             <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full bg-[#E6C9BB] shadow-sm z-10 border border-[#D7C4BB]"></div>
             
             <div className="flex justify-between items-center mb-4 border-b border-[#F4F1EA] pb-2 border-dashed">
@@ -314,7 +355,6 @@ const PostcardDecoration = () => (
         <div className="absolute inset-0 opacity-[0.4]" 
              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}>
         </div>
-        {/* Decorative SVGs here... */}
         <div className="absolute inset-2 border border-[#EBE8E0] rounded-[2px] opacity-50"></div>
     </div>
 );
@@ -492,11 +532,21 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
       onDelete(initialEntry.id);
   }
 
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+        const compressedBase64 = await compressImage(file);
+        setPreview(compressedBase64);
+    } catch (err) {
+        console.error("Compression failed", err);
+    }
+  };
+
   const handleSave = () => {
       const hasText = text && text.trim().length > 0;
       const hasImage = preview && preview.length > 0;
 
-      // Logic: At least one must be present
       if (!hasText && !hasImage) {
           setError("请至少输入文字或上传一张照片");
           return;
@@ -534,10 +584,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry }) => {
                 <div onClick={() => fileInputRef.current.click()} className="w-full aspect-video bg-[#F4F1EA] border border-dashed border-[#D4Ccc5] flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
                     {preview ? <img src={preview} className="w-full h-full object-cover p-2 bg-white shadow-sm" /> : <Camera className="text-[#C4Bdb5]" size={24} />}
                     <span className="text-[10px] text-[#C4Bdb5] mt-2 font-serif">{preview ? 'Change Photo' : 'Add Photo'}</span>
-                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-                        const file = e.target.files[0];
-                        if(file) { const r = new FileReader(); r.onload = () => setPreview(r.result); r.readAsDataURL(file); }
-                    }} />
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
                     {preview && <button onClick={(e) => { e.stopPropagation(); setPreview(null); fileInputRef.current.value = ''; }} className="absolute top-2 right-2 bg-white/80 rounded-full p-1 text-[#8D7B68] hover:bg-white"><X size={12} /></button>}
                 </div>
                 <textarea value={text} onChange={e => { setText(e.target.value); setError(''); }} placeholder="记录微小的瞬间..." className="w-full h-20 bg-transparent resize-none text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] focus:outline-none mb-2 leading-loose tracking-wide text-center" />
@@ -622,7 +669,6 @@ export default function App() {
     try {
         const saved = localStorage.getItem('momo_entries');
         const parsed = saved ? JSON.parse(saved) : MOCK_ENTRIES;
-        // Data sanitization: Ensure everything is array and valid objects
         if (!Array.isArray(parsed)) return MOCK_ENTRIES;
         return parsed.filter(e => e && typeof e === 'object');
     } catch (e) {
@@ -630,8 +676,17 @@ export default function App() {
     }
   });
 
+  // Robust storage with rollback
   useEffect(() => {
-    localStorage.setItem('momo_entries', JSON.stringify(entries));
+    const previousEntries = JSON.parse(localStorage.getItem('momo_entries') || '[]');
+    try {
+      localStorage.setItem('momo_entries', JSON.stringify(entries));
+    } catch (e) {
+      console.error("Storage Limit Reached", e);
+      // Fallback: Revert state to prevent white screen of death
+      setEntries(previousEntries);
+      alert("空间已满 (Storage Full). 无法保存大图片。");
+    }
   }, [entries]);
 
   const [searchTerm, setSearchTerm] = useState(''); 
@@ -711,7 +766,7 @@ export default function App() {
            </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+        <div className="flex-1 overflow-y-auto no-scrollbar px-0 pb-32 scroll-smooth min-h-0">
            {tab === 'home' ? (
              <div className="animate-fade-in pt-2 px-4">
                 <div className="mb-6 mt-2 relative group">
