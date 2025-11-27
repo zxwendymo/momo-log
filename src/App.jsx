@@ -79,6 +79,7 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#F9F7F2] p-6 text-center z-50">
            <h2 className="text-xl font-bold text-stone-800 mb-4">哎呀，App 晕倒了 😵</h2>
+           <p className="text-xs text-stone-500 mb-4 font-mono">{this.state.error?.message}</p>
            <button onClick={() => window.location.reload()} className="px-6 py-2 bg-stone-800 text-white rounded-full text-sm shadow-lg">刷新试试</button>
         </div>
       );
@@ -194,8 +195,6 @@ const formatDateSafe = (dateString, options) => {
     }
 };
 
-const MOCK_ENTRIES = [];
-
 // --- Components ---
 const GrainOverlay = ({ isExporting }) => (
   <div className={`pointer-events-none fixed inset-0 z-[100] mix-blend-multiply ${isExporting ? 'opacity-0' : 'opacity-[0.06]'}`}
@@ -305,10 +304,8 @@ const NoteCard = ({ entry, onClick }) => {
     );
 };
 
-// --- Gallery View (Memory Corridor) ---
 const GalleryView = ({ entries, onEntryClick }) => {
   const imageEntries = entries.filter(e => e.image);
-
   if (imageEntries.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-64 opacity-50 gap-2">
@@ -317,7 +314,6 @@ const GalleryView = ({ entries, onEntryClick }) => {
         </div>
       )
   }
-
   return (
     <div className="p-4 pb-32 animate-fade-in">
         <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-[0.3em] text-sm uppercase">Memory Corridor</h3>
@@ -333,7 +329,13 @@ const GalleryView = ({ entries, onEntryClick }) => {
   )
 }
 
-// --- Calendar View (New Home) ---
+const PostcardDecoration = () => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}></div>
+        <div className="absolute inset-2 border border-[#EBE8E0] rounded-[2px] opacity-50"></div>
+    </div>
+);
+
 const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, selectedDate, setSelectedDate, onClearSelection }) => { 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false); 
@@ -371,14 +373,11 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
           link.download = `momo-postcard.png`;
           link.href = canvas.toDataURL('image/png');
           link.click();
-      } catch (err) {
-          console.error("Save failed:", err);
-      } finally {
-          setIsExporting(false); 
-      }
+      } catch (err) { console.error("Save failed:", err); } 
+      finally { setIsExporting(false); }
   };
 
-  // Filter Logic
+  // Filtering Logic (Safe Date Handling)
   const getSelectedDateStr = () => {
     if (!selectedDate) return null;
     const year = selectedDate.getFullYear();
@@ -390,10 +389,10 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
   const selectedStr = getSelectedDateStr();
 
   const displayEntries = entries.filter(entry => {
-      // 1. Date Filter (if selected)
+      // 1. Date Filter (If date selected)
       if (selectedStr && entry.date !== selectedStr) return false;
       
-      // 2. Search Filter (if text exists)
+      // 2. Search Filter
       if (searchTerm) {
           const term = searchTerm.toLowerCase();
           const matchesTag = entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tag.toLowerCase().includes(term));
@@ -407,8 +406,7 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
   const handleDayClick = (day) => {
       if (isExporting) return;
       const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-      
-      // If clicking the same day, deselect it (show all)
+      // Toggle selection
       if (selectedDate && 
           newDate.getDate() === selectedDate.getDate() && 
           newDate.getMonth() === selectedDate.getMonth() && 
@@ -419,12 +417,16 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
       }
   }
 
+  // Handle background click to clear
+  const handleBackgroundClick = (e) => {
+      if (e.target === e.currentTarget && selectedDate) {
+          onClearSelection();
+      }
+  }
+
   return (
     <div className="animate-fade-in flex flex-col w-full h-full">
-      <div 
-        ref={calendarRef} 
-        className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}
-      >
+      <div ref={calendarRef} className={`bg-[#FDFBF7] relative transition-all duration-300 ${isExporting ? 'p-4 pb-8' : 'pb-6 px-2'}`}>
         {isExporting && (
             <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")` }}></div>
@@ -501,13 +503,14 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
         </div>
       </div>
 
-      <div className="bg-[#FDFBF7] border-t border-[#F4F1EA] p-4 min-h-[200px] pb-32">
+      {/* Entry List Area - clickable background to clear selection */}
+      <div onClick={handleBackgroundClick} className="bg-[#FDFBF7] border-t border-[#F4F1EA] p-4 min-h-[200px] pb-32 flex-1 cursor-default">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-[10px] text-[#A89F91] font-serif tracking-[0.2em] text-center uppercase">
                 {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'ALL MEMORIES'}
             </h3>
             {selectedDate && (
-                <button onClick={onClearSelection} className="text-[9px] text-[#D4Ccc5] hover:text-[#8D7B68] border border-[#EBE8E0] px-2 py-0.5 rounded-full">
+                <button onClick={onClearSelection} className="text-[9px] text-[#D4Ccc5] hover:text-[#8D7B68] border border-[#EBE8E0] px-2 py-0.5 rounded-full z-20">
                     Show All
                 </button>
             )}
@@ -517,8 +520,8 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
               <div className="space-y-4 animate-slide-up">
                   {displayEntries.map(entry => (
                       entry.image ? 
-                          <PolaroidCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} /> : 
-                          <NoteCard key={entry.id} entry={entry} onClick={() => onEntryClick(entry)} />
+                          <PolaroidCard key={entry.id} entry={entry} onClick={(e) => { e.stopPropagation(); onEntryClick(entry); }} /> : 
+                          <NoteCard key={entry.id} entry={entry} onClick={(e) => { e.stopPropagation(); onEntryClick(entry); }} />
                   ))}
               </div>
           ) : (
@@ -535,7 +538,7 @@ const CalendarView = ({ entries, onEntryClick, searchTerm, setSearchTerm, select
 const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) => {
   const [text, setText] = useState('');
   const [location, setLocation] = useState(''); 
-  const [date, setDate] = useState(initialDate || getTodayStr()); // Use initialDate prop
+  const [date, setDate] = useState(initialDate || getTodayStr()); 
   const [mood, setMood] = useState(MOODS[0].id);
   const [preview, setPreview] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -550,7 +553,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
       setMood(initialEntry.mood || MOODS[0].id);
       setPreview(initialEntry.image || null);
     } else if (initialDate) {
-        setDate(initialDate);
+        setDate(initialDate); // Set date if provided
     }
   }, [initialEntry, initialDate]);
 
@@ -594,6 +597,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
       }
       
       const id = initialEntry ? initialEntry.id : Date.now().toString();
+      // Use state date, fallback to today
       const safeDate = date || getTodayStr();
       
       onSave({ 
@@ -719,31 +723,19 @@ const AppContent = () => {
   const [currentEntry, setCurrentEntry] = useState(null);
   const [entries, setEntries] = useState([]); 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null); // Lifted state: Default to NULL (All)
+  const [selectedDate, setSelectedDate] = useState(null); 
 
   // Migration & Load
   useEffect(() => {
-    const migrateData = async () => {
-      const localData = localStorage.getItem('momo_entries');
-      if (localData) {
-        try {
-          const parsed = JSON.parse(localData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            for (const entry of parsed) await dbHelper.put(entry);
-            localStorage.setItem('momo_entries_backup', localData); 
-            localStorage.removeItem('momo_entries');
-          }
-        } catch (e) { console.error("Migration failed", e); }
-      }
+    const loadData = async () => {
       const allDocs = await dbHelper.getAll();
       const sorted = allDocs.sort((a, b) => b.id - a.id); 
       setEntries(sorted);
     };
-    migrateData();
+    loadData();
   }, []);
 
   const openNewEntryModal = () => { 
-      // If a date is selected in calendar, use that. Otherwise today.
       setCurrentEntry(null); 
       setIsModalOpen(true); 
   };
