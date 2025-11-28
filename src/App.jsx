@@ -583,6 +583,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
   const [location, setLocation] = useState(''); 
   const [date, setDate] = useState(initialDate || getTodayStr()); 
   const [mood, setMood] = useState(MOODS[0].id);
+  const [tags, setTags] = useState('#Daily'); // New Tags State
   const [preview, setPreview] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [error, setError] = useState('');
@@ -595,8 +596,10 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
       setDate(initialEntry.date || getTodayStr());
       setMood(initialEntry.mood || MOODS[0].id);
       setPreview(initialEntry.image || null);
+      // Load tags and join them into string
+      setTags(initialEntry.tags ? initialEntry.tags.join(' ') : '#Daily');
     } else if (initialDate) {
-        setDate(initialDate); // Set date if provided
+        setDate(initialDate);
     }
   }, [initialEntry, initialDate]);
 
@@ -640,9 +643,14 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
       }
       
       const id = initialEntry ? initialEntry.id : Date.now().toString();
-      // Use state date, fallback to today
       const safeDate = date || getTodayStr();
       
+      // Process Tags: split by space, remove empty, add # if missing
+      const tagArray = tags.split(' ')
+        .map(t => t.trim())
+        .filter(t => t.length > 0)
+        .map(t => t.startsWith('#') ? t : `#${t}`);
+
       onSave({ 
           id: id, 
           date: safeDate, 
@@ -650,7 +658,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
           text: text || '', 
           mood, 
           location: location || 'Unknown',
-          tags: ['#Daily'] 
+          tags: tagArray.length > 0 ? tagArray : ['#Daily'] 
       }); 
   }
 
@@ -666,7 +674,7 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
                 <button onClick={onClose} className="text-[#C4Bdb5] hover:text-[#8D7B68]"><X size={20} /></button>
             </div>
             <h3 className="text-center font-serif text-[#6B5D52] mb-6 tracking-widest text-sm mt-2">
-                {initialEntry ? 'E D I T    L O G' : 'N E W    L O G'}
+                {initialEntry ? 'E D I T &nbsp; L O G' : 'N E W &nbsp; L O G'}
             </h3>
             <div className="overflow-y-auto no-scrollbar flex-1">
                 <div onClick={() => fileInputRef.current.click()} className="w-full flex flex-col items-center justify-center cursor-pointer mb-6 hover:bg-[#EBE8E0] transition-colors relative">
@@ -693,14 +701,23 @@ const EntryModal = ({ onClose, onSave, onDelete, initialEntry, initialDate }) =>
                     </button>
                 </div>
                 {error && <p className="text-center text-red-400 text-xs mb-4 font-serif">{error}</p>}
+                
                 <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
                     <Calendar size={12} className="text-[#C4Bdb5] mr-2" />
                     <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="text-center text-xs text-[#6B5D52] font-serif bg-transparent focus:outline-none w-full uppercase tracking-widest cursor-pointer" style={{ colorScheme: 'light' }} />
                 </div>
-                <div className="mb-6 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
+                
+                <div className="mb-4 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
                     <MapPin size={12} className="text-[#C4Bdb5] mr-2" />
                     <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="添加地点" className="text-center text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] bg-transparent focus:outline-none w-full" />
                 </div>
+
+                {/* New Tags Input */}
+                <div className="mb-6 flex items-center justify-center border-b border-[#F4F1EA] pb-2 w-3/4 mx-auto">
+                    <Tag size={12} className="text-[#C4Bdb5] mr-2" />
+                    <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="#Daily #Mood" className="text-center text-xs text-[#6B5D52] font-serif placeholder-[#D4Ccc5] bg-transparent focus:outline-none w-full" />
+                </div>
+
                 <div className="mb-2 text-center">
                     <span className="text-[9px] text-[#C4Bdb5] font-serif tracking-widest uppercase mb-2 block">- Select Mood -</span>
                     <div className="grid grid-cols-5 gap-y-4 gap-x-2">
